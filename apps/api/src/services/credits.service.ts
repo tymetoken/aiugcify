@@ -1,8 +1,9 @@
-import { prisma } from '../config/database.js';
+import { prisma, type PrismaTransactionClient } from '../config/database.js';
 import { isDevelopment } from '../config/index.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { CreditPackage, CreditTransaction } from '@aiugcify/shared-types';
+import type { CreditPackage as PrismaCreditPackage, CreditTransaction as PrismaCreditTransaction } from '@prisma/client';
 
 class CreditsService {
   async getPackages(): Promise<CreditPackage[]> {
@@ -11,7 +12,7 @@ class CreditsService {
       orderBy: { displayOrder: 'asc' },
     });
 
-    return packages.map((pkg) => ({
+    return packages.map((pkg: PrismaCreditPackage) => ({
       id: pkg.id,
       name: pkg.name,
       credits: pkg.credits,
@@ -50,7 +51,7 @@ class CreditsService {
     ]);
 
     return {
-      transactions: transactions.map((t) => ({
+      transactions: transactions.map((t: PrismaCreditTransaction) => ({
         id: t.id,
         type: t.type,
         status: t.status,
@@ -80,7 +81,7 @@ class CreditsService {
     }
 
     // Atomic transaction to prevent race conditions
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: PrismaTransactionClient) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
         select: { creditBalance: true },
@@ -131,7 +132,7 @@ class CreditsService {
     videoId: string,
     description: string
   ): Promise<{ success: boolean; newBalance: number }> {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: PrismaTransactionClient) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
         select: { creditBalance: true },

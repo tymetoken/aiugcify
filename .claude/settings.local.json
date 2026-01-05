@@ -42,7 +42,12 @@
       "mcp__playwright__browser_evaluate",
       "mcp__playwright__browser_tabs",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: AIUGCify - AI UGC Video Generation Platform\n\nA monorepo containing:\n- API: Express.js backend with video generation, auth, credits, Stripe integration\n- Extension: Chrome extension for TikTok product scraping and video generation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(gh auth status:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

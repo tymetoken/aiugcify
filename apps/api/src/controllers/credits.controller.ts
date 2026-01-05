@@ -34,7 +34,8 @@ class CreditsController {
 
   async getHistory(req: Request, res: Response) {
     const { user } = req as AuthenticatedRequest;
-    const { page, limit } = req.query as { page: number; limit: number };
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
 
     const { transactions, total } = await creditsService.getHistory(user.id, page, limit);
     const result = paginate(transactions, total, page, limit);

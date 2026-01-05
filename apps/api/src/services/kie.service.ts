@@ -93,7 +93,7 @@ class KieService {
       },
     });
 
-    const data = await response.json();
+    const data = await response.json() as T & { message?: string; error?: string };
 
     if (!response.ok) {
       logger.error({ endpoint, status: response.status, error: data }, 'Kie.ai API error');

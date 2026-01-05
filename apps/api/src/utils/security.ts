@@ -6,8 +6,7 @@ import { logger } from './logger.js';
  */
 
 // Allowed image domains for external URLs (used when domain allowlist is enabled)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ALLOWED_IMAGE_DOMAINS = [
+const _ALLOWED_IMAGE_DOMAINS = [
   // TikTok
   'p16-sign-sg.tiktokcdn.com',
   'p16-sign-va.tiktokcdn.com',

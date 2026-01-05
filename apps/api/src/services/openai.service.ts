@@ -3,7 +3,7 @@ import { config } from '../config/index.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { validateImageUrl } from '../utils/security.js';
-import type { ProductData, VideoStyle, SceneSuggestion } from '@aiugcify/shared-types';
+import type { ProductData, VideoStyle, SceneSuggestion, ProductReview } from '@aiugcify/shared-types';
 
 const openai = new OpenAI({
   apiKey: config.OPENAI_API_KEY,
@@ -525,7 +525,7 @@ ${visualAnalysis ? `VISUAL ANALYSIS FROM IMAGE:
 - Visual Description: ${visualAnalysis.visualDescription}
 ` : ''}
 
-${productData.reviews?.length ? `CUSTOMER REVIEWS:\n${productData.reviews.slice(0, 5).map(r => `- "${r.text}" (${r.rating}/5 stars)`).join('\n')}` : ''}
+${productData.reviews?.length ? `CUSTOMER REVIEWS:\n${productData.reviews.slice(0, 5).map((r: ProductReview) => `- "${r.text}" (${r.rating}/5 stars)`).join('\n')}` : ''}
 
 Return ONLY the JSON object, no other text. IMPORTANT: Include the visual analysis details in the masterProductSummary for accurate video generation.`;
 

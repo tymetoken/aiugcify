@@ -6,7 +6,10 @@ import { ErrorCodes } from '../utils/errors.js';
 
 const createStore = () => {
   return new RedisStore({
-    sendCommand: (...args: string[]) => redisConnection.call(...args) as Promise<unknown>,
+    // @ts-expect-error - RedisStore sendCommand type mismatch with ioredis
+    sendCommand: async (...args: string[]) => {
+      return redisConnection.call(args[0], ...args.slice(1));
+    },
   });
 };
 

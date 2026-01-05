@@ -4,7 +4,7 @@ import { creditsService } from './credits.service.js';
 import { videoQueue } from '../queues/video.queue.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import type { ProductData, VideoStyle, Video, VideoListItem, AnalyzedProduct } from '@aiugcify/shared-types';
+import type { ProductData, VideoStyle, Video, VideoListItem } from '@aiugcify/shared-types';
 
 interface GenerateScriptInput {
   productData: ProductData;

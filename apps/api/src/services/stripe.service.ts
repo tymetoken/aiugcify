@@ -1,11 +1,11 @@
 import Stripe from 'stripe';
 import { config } from '../config/index.js';
-import { prisma } from '../config/database.js';
+import { prisma, type PrismaTransactionClient } from '../config/database.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
 const stripe = new Stripe(config.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2024-11-20.acacia' as Stripe.LatestApiVersion,
 });
 
 export interface CreateCheckoutParams {
@@ -162,7 +162,7 @@ class StripeService {
     logger.info({ sessionId: session.id, userId, totalCredits }, 'Processing checkout completion');
 
     // Use transaction for atomic credit update
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: PrismaTransactionClient) => {
       // Get current balance
       const user = await tx.user.findUnique({
         where: { id: userId },
