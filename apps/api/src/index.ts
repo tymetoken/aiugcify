@@ -11,11 +11,12 @@ async function main() {
   // Connect to database
   await connectDatabase();
 
-  // Start server
-  const server = app.listen(parseInt(config.API_PORT, 10), () => {
+  // Start server (Railway sets PORT automatically)
+  const port = parseInt(config.PORT, 10);
+  const server = app.listen(port, () => {
     logger.info(
       {
-        port: config.API_PORT,
+        port,
         env: config.NODE_ENV,
         url: config.API_URL,
       },

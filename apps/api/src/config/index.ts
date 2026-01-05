@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  API_PORT: z.string().default('3000'),
+  PORT: z.string().default('3000'), // Railway sets PORT automatically
+  API_PORT: z.string().optional(), // Legacy support
   API_URL: z.string().default('http://localhost:3000'),
   FRONTEND_URL: z.string().default('https://aiugcify.com'),
 
