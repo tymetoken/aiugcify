@@ -14,6 +14,11 @@ import { webhooksRoutes } from './routes/webhooks.routes.js';
 export function createApp() {
   const app = express();
 
+  // Health check - MUST be first to allow Railway health checks (before CORS/auth)
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Security headers with strict CSP
   app.use(
     helmet({
@@ -109,11 +114,6 @@ export function createApp() {
 
   // Rate limiting
   app.use('/api', apiRateLimit);
-
-  // Health check
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
-  });
 
   // API routes
   app.use('/api/v1/auth', authRoutes);

@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd ../.. && pnpm install && pnpm --filter @aiugcify/shared-types build && pnpm --filter @aiugcify/api db:generate && pnpm --filter @aiugcify/api build"
+buildCommand = "cd ../.. && pnpm install && pnpm --filter @aiugcify/shared-types build && pnpm --filter @aiugcify/api db:generate && pnpm --filter @aiugcify/api db:push && pnpm --filter @aiugcify/api build"
 
 [deploy]
 startCommand = "node dist/index.js"
