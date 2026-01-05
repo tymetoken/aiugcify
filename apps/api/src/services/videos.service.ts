@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { openaiService } from './openai.service.js';
 import { creditsService } from './credits.service.js';
@@ -49,13 +50,13 @@ class VideosService {
       data: {
         userId,
         status: 'SCRIPT_READY',
-        productData: productData as unknown as Record<string, unknown>,
+        productData: productData as unknown as Prisma.InputJsonValue,
         productTitle: analyzedProduct.productName, // Use cleaned product name
         productUrl: productData.url,
         productImages: productData.images,
         productPrice: analyzedProduct.priceInfo.currentPrice,
         productDescription: analyzedProduct.productDescription,
-        analyzedProductData: analyzedProduct as unknown as Record<string, unknown>,
+        analyzedProductData: analyzedProduct as unknown as Prisma.InputJsonValue,
         masterProductSummary: analyzedProduct.masterProductSummary,
         generatedScript: scriptResult.script,
         videoStyle,

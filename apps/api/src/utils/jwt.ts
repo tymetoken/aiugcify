@@ -13,14 +13,14 @@ export interface DecodedToken extends TokenPayload {
 
 export function generateAccessToken(payload: TokenPayload): string {
   const options: SignOptions = {
-    expiresIn: config.JWT_ACCESS_EXPIRY as string,
+    expiresIn: config.JWT_ACCESS_EXPIRY as SignOptions['expiresIn'],
   };
   return jwt.sign(payload, config.JWT_ACCESS_SECRET, options);
 }
 
 export function generateRefreshToken(payload: TokenPayload): string {
   const options: SignOptions = {
-    expiresIn: config.JWT_REFRESH_EXPIRY as string,
+    expiresIn: config.JWT_REFRESH_EXPIRY as SignOptions['expiresIn'],
   };
   return jwt.sign(payload, config.JWT_REFRESH_SECRET, options);
 }

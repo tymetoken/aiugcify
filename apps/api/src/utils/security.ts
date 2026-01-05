@@ -6,7 +6,8 @@ import { logger } from './logger.js';
  */
 
 // Allowed image domains for external URLs (used when domain allowlist is enabled)
-const _ALLOWED_IMAGE_DOMAINS = [
+// Exported for potential future use in strict mode
+export const ALLOWED_IMAGE_DOMAINS = [
   // TikTok
   'p16-sign-sg.tiktokcdn.com',
   'p16-sign-va.tiktokcdn.com',

@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { Prisma } from '@prisma/client';
 import { config } from '../config/index.js';
 import { prisma, type PrismaTransactionClient } from '../config/database.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
@@ -121,7 +122,7 @@ class StripeService {
         provider: 'stripe',
         eventId: event.id,
         eventType: event.type,
-        payload: event.data as unknown as Stripe.Event.Data,
+        payload: event.data as unknown as Prisma.InputJsonValue,
       },
       update: {},
     });
