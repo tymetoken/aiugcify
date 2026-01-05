@@ -1,0 +1,228 @@
+import bcrypt from 'bcrypt';
+import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
+import { generateTokens, verifyRefreshToken, getRefreshTokenExpiry } from '../utils/jwt.js';
+import { AppError, ErrorCodes } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
+import type { UserPublic, AuthTokens } from '@aiugcify/shared-types';
+
+const SALT_ROUNDS = 12;
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface AuthResult {
+  user: UserPublic;
+  tokens: AuthTokens;
+}
+
+class AuthService {
+  async register(input: RegisterInput): Promise<AuthResult> {
+    const { email, password, name } = input;
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existingUser) {
+      throw new AppError(409, ErrorCodes.EMAIL_ALREADY_EXISTS, 'Email already registered');
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Get free credits amount from config
+    const freeCredits = parseInt(config.FREE_CREDITS_ON_SIGNUP, 10);
+
+    // Create user with free credits
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        passwordHash,
+        name,
+        creditBalance: freeCredits,
+      },
+    });
+
+    // Create a credit transaction for the free signup credits
+    if (freeCredits > 0) {
+      await prisma.creditTransaction.create({
+        data: {
+          userId: user.id,
+          type: 'BONUS',
+          status: 'COMPLETED',
+          amount: freeCredits,
+          balanceAfter: freeCredits,
+          description: 'Free signup credits',
+        },
+      });
+
+      logger.info({ userId: user.id, credits: freeCredits }, 'Free signup credits granted');
+    }
+
+    // Generate tokens
+    const tokens = generateTokens({ userId: user.id, email: user.email });
+
+    // Store refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: tokens.refreshToken,
+        userId: user.id,
+        expiresAt: getRefreshTokenExpiry(),
+      },
+    });
+
+    return {
+      user: this.toPublicUser(user),
+      tokens,
+    };
+  }
+
+  async login(input: LoginInput): Promise<AuthResult> {
+    const { email, password } = input;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid email or password');
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isValidPassword) {
+      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid email or password');
+    }
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Generate tokens
+    const tokens = generateTokens({ userId: user.id, email: user.email });
+
+    // Store refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: tokens.refreshToken,
+        userId: user.id,
+        expiresAt: getRefreshTokenExpiry(),
+      },
+    });
+
+    return {
+      user: this.toPublicUser(user),
+      tokens,
+    };
+  }
+
+  async refresh(refreshToken: string): Promise<AuthTokens> {
+    // Verify token structure
+    let payload;
+    try {
+      payload = verifyRefreshToken(refreshToken);
+    } catch {
+      throw new AppError(401, ErrorCodes.TOKEN_INVALID, 'Invalid refresh token');
+    }
+
+    // Check if token exists in database
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+      include: { user: true },
+    });
+
+    if (!storedToken) {
+      throw new AppError(401, ErrorCodes.TOKEN_INVALID, 'Refresh token not found');
+    }
+
+    if (storedToken.revokedAt) {
+      throw new AppError(401, ErrorCodes.TOKEN_INVALID, 'Refresh token has been revoked');
+    }
+
+    if (storedToken.expiresAt < new Date()) {
+      throw new AppError(401, ErrorCodes.TOKEN_EXPIRED, 'Refresh token has expired');
+    }
+
+    // Revoke old token
+    await prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { revokedAt: new Date() },
+    });
+
+    // Generate new tokens
+    const tokens = generateTokens({ userId: payload.userId, email: payload.email });
+
+    // Store new refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: tokens.refreshToken,
+        userId: payload.userId,
+        expiresAt: getRefreshTokenExpiry(),
+      },
+    });
+
+    return tokens;
+  }
+
+  async logout(refreshToken?: string): Promise<void> {
+    if (refreshToken) {
+      // Revoke specific token
+      await prisma.refreshToken.updateMany({
+        where: { token: refreshToken },
+        data: { revokedAt: new Date() },
+      });
+    }
+  }
+
+  async logoutAll(userId: string): Promise<void> {
+    await prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  async getUser(userId: string): Promise<UserPublic> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw AppError.notFound('User not found');
+    }
+
+    return this.toPublicUser(user);
+  }
+
+  private toPublicUser(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    creditBalance: number;
+  }): UserPublic {
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      creditBalance: user.creditBalance,
+    };
+  }
+}
+
+export const authService = new AuthService();

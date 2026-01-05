@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ USER & AUTH ============
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String
+  name             String?
+  creditBalance    Int       @default(0)
+  stripeCustomerId String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  lastLoginAt      DateTime?
+
+  creditTransactions CreditTransaction[]
+  videos             Video[]
+  refreshTokens      RefreshToken[]
+
+  @@index([email])
+  @@index([stripeCustomerId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============ CREDITS & PAYMENTS ============
+
+enum TransactionType {
+  PURCHASE
+  CONSUMPTION
+  REFUND
+  BONUS
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model CreditTransaction {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            TransactionType
+  status          TransactionStatus @default(COMPLETED)
+  amount          Int
+  balanceAfter    Int
+  stripeSessionId String?           @unique
+  stripePaymentId String?
+  packageId       String?
+  priceInCents    Int?
+  videoId         String?
+  video           Video?            @relation(fields: [videoId], references: [id])
+  description     String?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+
+  @@index([userId])
+  @@index([stripeSessionId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model CreditPackage {
+  id            String   @id @default(cuid())
+  name          String
+  credits       Int
+  priceInCents  Int
+  stripePriceId String   @unique
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0)
+  bonusCredits  Int      @default(0)
+  badgeText     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// ============ VIDEO GENERATION ============
+
+enum VideoStatus {
+  PENDING_SCRIPT
+  SCRIPT_READY
+  QUEUED
+  GENERATING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum VideoStyle {
+  PRODUCT_SHOWCASE
+  TALKING_HEAD
+  LIFESTYLE
+}
+
+model Video {
+  id                 String      @id @default(cuid())
+  userId             String
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             VideoStatus @default(PENDING_SCRIPT)
+
+  // Product data (scraped from TikTok Shop)
+  productData        Json
+  productTitle       String
+  productUrl         String
+  productImages      String[]
+  productPrice       String?
+  productDescription String?     @db.Text
+
+  // Analyzed product data (from Product Breakdown GPT)
+  analyzedProductData Json?
+  masterProductSummary String?   @db.Text
+
+  // Script
+  generatedScript    String?     @db.Text
+  editedScript       String?     @db.Text
+  finalScript        String?     @db.Text
+
+  // Video style
+  videoStyle         VideoStyle  @default(PRODUCT_SHOWCASE)
+
+  // Video generation
+  soraJobId          String?     @unique
+  soraModel          String?     @default("sora-2")
+  videoDuration      Int?
+  videoResolution    String?
+
+  // Output
+  cloudinaryPublicId String?
+  cloudinaryUrl      String?
+  downloadUrl        String?
+  downloadExpiresAt  DateTime?
+  thumbnailUrl       String?
+
+  // Metadata
+  creditsUsed        Int         @default(1)
+  errorMessage       String?
+  errorCode          String?
+  retryCount         Int         @default(0)
+
+  // Timestamps
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  scriptGeneratedAt  DateTime?
+  generationStartedAt DateTime?
+  completedAt        DateTime?
+
+  creditTransactions CreditTransaction[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([soraJobId])
+  @@index([createdAt])
+}
+
+// ============ SYSTEM ============
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String    @unique
+  eventType   String
+  payload     Json
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@index([eventId])
+  @@index([processed])
+}

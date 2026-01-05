@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(dir \"C:\\Users\\mfsef\\Desktop\\claude_code\\aiugcify\")",
+      "Bash(powershell -Command:*)",
+      "WebFetch(domain:developer.chrome.com)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:docs.bullmq.io)",
+      "Bash(docker-compose up:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm db:push:*)",
+      "Bash(pnpm db:seed:*)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm build:*)",
+      "Bash(node:*)",
+      "Bash(dir \"C:\\Users\\mfsef\\Desktop\\claude_code\\aiugcify\\apps\\extension\\dist\" /s /b)",
+      "Bash(pnpm worker:dev:*)",
+      "Bash(pnpm --filter api worker:dev:*)",
+      "WebFetch(domain:docs.kie.ai)",
+      "Bash(curl:*)",
+      "Bash(findstr:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(pnpm --filter api dev:*)",
+      "Bash(pnpm --filter extension build:*)",
+      "Bash(pnpm:*)",
+      "WebFetch(domain:seller-us.tiktok.com)",
+      "WebFetch(domain:ads.tiktok.com)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_close",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_select_option",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_handle_dialog",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_run_code",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_tabs",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
+}

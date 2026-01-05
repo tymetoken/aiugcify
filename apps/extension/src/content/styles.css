@@ -1,0 +1,58 @@
+/* Styles for content script elements */
+
+.aiugcify-floating-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999999;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0ea5e9 0%, #d946ef 100%);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.aiugcify-floating-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.aiugcify-floating-button:active {
+  transform: scale(0.95);
+}
+
+.aiugcify-floating-button svg {
+  width: 28px;
+  height: 28px;
+  fill: white;
+}
+
+.aiugcify-tooltip {
+  position: fixed;
+  bottom: 84px;
+  right: 20px;
+  z-index: 999998;
+  background: #1e293b;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.aiugcify-floating-button:hover + .aiugcify-tooltip,
+.aiugcify-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
