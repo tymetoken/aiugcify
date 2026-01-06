@@ -222,6 +222,16 @@ class ApiClient {
     await this.request('/credits/subscription/resume', { method: 'POST' });
   }
 
+  async changeSubscriptionPlan(
+    newPlanId: string,
+    newInterval: 'monthly' | 'yearly'
+  ): Promise<{ subscription: UserSubscription | null; effectiveDate: string }> {
+    return this.request('/credits/subscription/change-plan', {
+      method: 'POST',
+      body: JSON.stringify({ newPlanId, newInterval }),
+    });
+  }
+
   // Videos endpoints
   async generateScript(
     productData: ProductData,

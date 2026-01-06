@@ -261,6 +261,96 @@ class StripeService {
     logger.info({ userId }, 'Subscription resumed via Stripe');
   }
 
+  async changeSubscriptionPlan(
+    userId: string,
+    newPlanId: string,
+    newInterval: 'monthly' | 'yearly'
+  ) {
+    // Get existing subscription
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId },
+      include: { plan: true },
+    });
+
+    if (!subscription) {
+      throw AppError.notFound('No active subscription found');
+    }
+
+    if (subscription.status !== 'ACTIVE') {
+      throw new AppError(400, ErrorCodes.BAD_REQUEST, 'Cannot change plan on inactive subscription');
+    }
+
+    // Prevent changing to the same plan+interval
+    if (subscription.planId === newPlanId && subscription.interval === newInterval.toUpperCase()) {
+      throw new AppError(400, ErrorCodes.BAD_REQUEST, 'Already subscribed to this plan and interval');
+    }
+
+    // Get new plan
+    const newPlan = await prisma.subscriptionPlan.findUnique({
+      where: { id: newPlanId, isActive: true },
+    });
+
+    if (!newPlan) {
+      throw new AppError(400, ErrorCodes.INVALID_PACKAGE, 'Invalid subscription plan');
+    }
+
+    // Get new price ID
+    const newStripePriceId = newInterval === 'monthly'
+      ? newPlan.monthlyStripePriceId
+      : newPlan.yearlyStripePriceId;
+
+    // Get Stripe subscription to find the subscription item ID
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
+    const subscriptionItemId = stripeSubscription.items.data[0].id;
+
+    // Update subscription in Stripe
+    const updatedStripeSubscription = await stripe.subscriptions.update(
+      subscription.stripeSubscriptionId,
+      {
+        items: [{
+          id: subscriptionItemId,
+          price: newStripePriceId,
+        }],
+        proration_behavior: 'create_prorations',
+        metadata: {
+          userId,
+          planId: newPlanId,
+          interval: newInterval,
+        },
+      }
+    );
+
+    // Calculate new credits per period
+    const creditsPerPeriod = newInterval === 'monthly'
+      ? newPlan.monthlyCredits
+      : newPlan.yearlyCredits;
+
+    // Update local subscription record
+    await prisma.subscription.update({
+      where: { userId },
+      data: {
+        planId: newPlanId,
+        stripePriceId: newStripePriceId,
+        interval: newInterval.toUpperCase() as 'MONTHLY' | 'YEARLY',
+        creditsPerPeriod,
+        currentPeriodStart: new Date(updatedStripeSubscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(updatedStripeSubscription.current_period_end * 1000),
+        cancelAtPeriodEnd: false,
+        canceledAt: null,
+      },
+    });
+
+    logger.info(
+      { userId, oldPlanId: subscription.planId, newPlanId, newInterval },
+      'Subscription plan changed'
+    );
+
+    return {
+      subscription: await subscriptionService.getSubscriptionStatus(userId),
+      effectiveDate: new Date(),
+    };
+  }
+
   async handleWebhook(payload: Buffer, signature: string) {
     let event: Stripe.Event;
 

@@ -18,6 +18,7 @@ export function CreditsPage() {
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [showOneTime, setShowOneTime] = useState(false);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('yearly');
+  const [changePlanConfirm, setChangePlanConfirm] = useState<{ planId: string; planName: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -107,6 +108,44 @@ export function CreditsPage() {
       console.error('Failed to cancel:', error);
     }
     setPurchasingId(null);
+  };
+
+  const handleChangePlan = async (planId: string) => {
+    setPurchasingId(planId);
+    setChangePlanConfirm(null);
+    try {
+      await apiClient.changeSubscriptionPlan(planId, billingInterval);
+      await refreshUser();
+      await loadData();
+      alert('Plan changed successfully!');
+    } catch (error) {
+      console.error('Failed to change plan:', error);
+      alert('Failed to change plan: ' + (error as Error).message);
+    }
+    setPurchasingId(null);
+  };
+
+  // Check if the selected plan+interval is different from current subscription
+  const canChangeToPlan = (planId: string) => {
+    if (!subscription || subscription.status !== 'ACTIVE') return false;
+    // Different plan or different interval (convert to match case)
+    return subscription.plan.id !== planId || subscription.interval !== billingInterval.toUpperCase();
+  };
+
+  // Determine if this is an upgrade or switch
+  const getChangeType = (targetPlan: SubscriptionPlan) => {
+    if (!subscription) return 'subscribe';
+    const currentPlan = subscription.plan;
+    const currentPrice = subscription.interval === 'MONTHLY'
+      ? currentPlan.monthlyPriceInCents
+      : currentPlan.yearlyPriceInCents;
+    const targetPrice = billingInterval === 'monthly'
+      ? targetPlan.monthlyPriceInCents
+      : targetPlan.yearlyPriceInCents;
+
+    if (targetPrice > currentPrice) return 'upgrade';
+    if (targetPrice < currentPrice) return 'downgrade';
+    return 'switch';
   };
 
   // Calculate price per video
@@ -235,7 +274,7 @@ export function CreditsPage() {
                   )}
                 </div>
 
-                {isCurrent ? (
+                {isCurrent && subscription?.interval === billingInterval.toUpperCase() ? (
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-sm text-green-600 font-semibold flex items-center gap-1.5">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -251,6 +290,19 @@ export function CreditsPage() {
                       {purchasingId === 'cancel' ? 'Canceling...' : 'Cancel'}
                     </button>
                   </div>
+                ) : canChangeToPlan(plan.id) ? (
+                  <Button
+                    onClick={() => setChangePlanConfirm({ planId: plan.id, planName: plan.name })}
+                    variant={isPopular ? 'primary' : 'outline'}
+                    className={`w-full mt-4 ${
+                      isPopular
+                        ? 'bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 shadow-lg shadow-primary-500/30 text-white font-semibold'
+                        : ''
+                    }`}
+                    isLoading={purchasingId === plan.id}
+                  >
+                    {getChangeType(plan) === 'upgrade' ? '⬆️ Upgrade' : getChangeType(plan) === 'downgrade' ? '⬇️ Downgrade' : '🔄 Switch'}
+                  </Button>
                 ) : (
                   <Button
                     onClick={() => handleSubscribe(plan.id)}
@@ -336,6 +388,55 @@ export function CreditsPage() {
           ← Back to Dashboard
         </button>
       </div>
+
+      {/* Change Plan Confirmation Modal */}
+      {changePlanConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-800 mb-2">
+              {(() => {
+                const plan = subscriptionPlans.find(p => p.id === changePlanConfirm.planId);
+                if (!plan) return 'Change Plan';
+                const changeType = getChangeType(plan);
+                if (changeType === 'upgrade') return '⬆️ Upgrade Plan';
+                if (changeType === 'downgrade') return '⬇️ Downgrade Plan';
+                return '🔄 Switch Plan';
+              })()}
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              {(() => {
+                const plan = subscriptionPlans.find(p => p.id === changePlanConfirm.planId);
+                if (!plan) return '';
+                const changeType = getChangeType(plan);
+                if (changeType === 'upgrade') {
+                  return `You'll be charged a prorated amount for the upgrade to ${changePlanConfirm.planName} (${billingInterval}).`;
+                }
+                if (changeType === 'downgrade') {
+                  return `You'll receive a prorated credit when switching to ${changePlanConfirm.planName} (${billingInterval}).`;
+                }
+                return `Switch to ${changePlanConfirm.planName} with ${billingInterval} billing.`;
+              })()}
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setChangePlanConfirm(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={() => handleChangePlan(changePlanConfirm.planId)}
+                isLoading={purchasingId === changePlanConfirm.planId}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Login Modal */}
       <LoginModal

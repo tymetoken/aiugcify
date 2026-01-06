@@ -85,6 +85,14 @@ class CreditsController {
     await stripeService.resumeSubscription(user.id);
     return sendNoContent(res);
   }
+
+  async changeSubscriptionPlan(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+    const { newPlanId, newInterval } = req.body;
+
+    const result = await stripeService.changeSubscriptionPlan(user.id, newPlanId, newInterval);
+    return sendSuccess(res, result);
+  }
 }
 
 export const creditsController = new CreditsController();

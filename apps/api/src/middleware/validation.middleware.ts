@@ -107,6 +107,11 @@ export const schemas = {
     cancelUrl: z.string().min(1).optional(),
   }),
 
+  changePlan: z.object({
+    newPlanId: z.string().min(1),
+    newInterval: z.enum(['monthly', 'yearly']),
+  }),
+
   // Pagination schemas
   pagination: z.object({
     page: z.coerce.number().int().positive().default(1),

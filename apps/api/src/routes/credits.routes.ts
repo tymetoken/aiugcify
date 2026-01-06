@@ -59,3 +59,10 @@ creditsRoutes.post(
   asyncHandler(authMiddleware),
   asyncHandler(creditsController.resumeSubscription)
 );
+
+creditsRoutes.post(
+  '/subscription/change-plan',
+  asyncHandler(authMiddleware),
+  validate(schemas.changePlan),
+  asyncHandler(creditsController.changeSubscriptionPlan)
+);
