@@ -456,16 +456,16 @@ export function CreditsPage() {
                       : 'bg-white border-2 border-slate-200 hover:border-slate-300 hover:shadow-lg'
                 }`}
               >
-                {/* Badge */}
-                {isPopular && !isCurrentWithSameInterval && (
+                {/* Badge - show RECOMMENDED only when not showing upgrade/downgrade badge */}
+                {isPopular && !isCurrentWithSameInterval && !(hasActiveSubscription && canChange) && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
                     ✨ RECOMMENDED
                   </span>
                 )}
 
-                {/* Upgrade/Downgrade indicator for subscribed users */}
+                {/* Upgrade/Downgrade indicator for subscribed users - centered like RECOMMENDED */}
                 {hasActiveSubscription && canChange && changeType && (
-                  <div className={`absolute -top-3 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg ${
+                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg ${
                     changeType === 'upgrade'
                       ? 'bg-gradient-to-r from-emerald-500 to-green-400 shadow-emerald-500/40'
                       : changeType === 'downgrade'
