@@ -72,7 +72,15 @@ export const useVideoStore = create<VideoState>()(
 
       generateScript: async (productData: ProductData, additionalNotes?: string) => {
         const { selectedStyle } = get();
-        set({ isLoading: true, error: null });
+        // Reset any old video state before generating new script
+        set({
+          isLoading: true,
+          error: null,
+          currentScript: null,
+          currentVideo: null,
+          isGenerating: false,
+          generationProgress: 0,
+        });
 
         try {
           const response = await apiClient.generateScript(productData, selectedStyle, {

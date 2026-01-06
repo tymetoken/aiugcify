@@ -86,15 +86,18 @@ class CloudinaryService {
   getSignedUrl(publicId: string, expiresInSeconds: number = 7 * 24 * 3600): string {
     const expirationTime = Math.floor(Date.now() / 1000) + expiresInSeconds;
 
+    // Use explicit transformation to transcode video to MP4/H264
+    // This ensures GIF or other formats are converted to proper MP4
     return cloudinary.url(publicId, {
       resource_type: 'video',
       type: 'authenticated',
       sign_url: true,
       expires_at: expirationTime,
-      format: 'mp4', // Ensure video is delivered as MP4
+      format: 'mp4',
       transformation: [
-        { fetch_format: 'mp4' },
         { video_codec: 'h264' },
+        { audio_codec: 'aac' },
+        { flags: 'attachment' }, // Force download with correct Content-Disposition
       ],
     });
   }

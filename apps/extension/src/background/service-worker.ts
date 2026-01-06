@@ -31,11 +31,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case 'VIDEO_COMPLETED':
-      showVideoCompletedNotification(message.data);
+      console.log('[AI UGCify] Video completed:', message.data);
       return false;
 
     case 'VIDEO_FAILED':
-      showVideoFailedNotification(message.data);
+      console.log('[AI UGCify] Video failed:', message.data);
       return false;
 
     default:

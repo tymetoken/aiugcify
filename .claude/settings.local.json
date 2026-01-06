@@ -48,7 +48,11 @@
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(echo VITE_API_URL=https://aiugcifyapi-production.up.railway.app/api/v)",
+      "Bash(dir:*)",
+      "Bash(timeout 60 powershell:*)",
+      "Bash(timeout:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

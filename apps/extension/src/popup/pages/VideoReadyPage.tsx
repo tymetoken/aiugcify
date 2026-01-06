@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { useUIStore } from '../store/uiStore';
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { apiClient } from '@/shared/api-client';
 import { Button } from '../components/Button';
 
@@ -34,21 +33,20 @@ export function VideoReadyPage() {
 
       // Ensure URL requests MP4 format by adding/modifying format parameter
       let mp4Url = downloadUrl;
-      if (downloadUrl.includes('cloudinary.com')) {
-        // Add f_mp4 transformation to force MP4 format if not already present
-        if (!downloadUrl.includes('f_mp4') && !downloadUrl.includes('/f_mp4/')) {
-          // Insert format transformation before /v1/ or after /video/
+      if (downloadUrl.includes('cloudinary.com') || downloadUrl.includes('res.cloudinary.com')) {
+        // Add vc_h264 transformation to force MP4/H264 format if not already present
+        if (!downloadUrl.includes('vc_h264') && !downloadUrl.includes('f_mp4')) {
+          // For signed URLs, transformation goes after the signature part
+          // Pattern: /video/authenticated/s--xxx--/vc_h264,f_mp4/v123/...
           mp4Url = downloadUrl.replace(
-            /\/video\/(authenticated|upload)\//,
-            '/video/$1/f_mp4,vc_h264/'
+            /(\/video\/(?:authenticated|upload)\/(?:s--[^/]+--\/)?)(?!vc_h264|f_mp4)/,
+            '$1vc_h264,f_mp4/'
           );
         }
-        // Ensure .mp4 extension
-        if (!mp4Url.endsWith('.mp4')) {
-          mp4Url = mp4Url.replace(/\.[^.]+$/, '.mp4');
-          if (!mp4Url.endsWith('.mp4')) {
-            mp4Url += '.mp4';
-          }
+        // Ensure .mp4 extension - handle both with and without existing extension
+        if (!mp4Url.match(/\.mp4(\?|$)/)) {
+          // Replace any existing extension or add .mp4 before query string
+          mp4Url = mp4Url.replace(/(\.[^./?]+)?(\?|$)/, '.mp4$2');
         }
       }
 
@@ -100,13 +98,17 @@ export function VideoReadyPage() {
         let videoUrl = currentVideo.cloudinaryUrl || currentVideo.downloadUrl;
         if (videoUrl) {
           // Force MP4 format for Cloudinary URLs
-          if (videoUrl.includes('cloudinary.com')) {
-            videoUrl = videoUrl.replace(
-              /\/video\/(authenticated|upload)\//,
-              '/video/$1/f_mp4,vc_h264/'
-            );
-            if (!videoUrl.endsWith('.mp4')) {
-              videoUrl = videoUrl.replace(/\.[^.]+$/, '.mp4');
+          if (videoUrl.includes('cloudinary.com') || videoUrl.includes('res.cloudinary.com')) {
+            // Add vc_h264 transformation to force MP4/H264 format
+            if (!videoUrl.includes('vc_h264') && !videoUrl.includes('f_mp4')) {
+              videoUrl = videoUrl.replace(
+                /(\/video\/(?:authenticated|upload)\/(?:s--[^/]+--\/)?)(?!vc_h264|f_mp4)/,
+                '$1vc_h264,f_mp4/'
+              );
+            }
+            // Ensure .mp4 extension
+            if (!videoUrl.match(/\.mp4(\?|$)/)) {
+              videoUrl = videoUrl.replace(/(\.[^./?]+)?(\?|$)/, '.mp4$2');
             }
           }
 
@@ -186,7 +188,7 @@ export function VideoReadyPage() {
       {/* Video Player */}
       <div className={`${isPlaying ? 'flex-1 flex items-center justify-center p-2' : 'p-4'}`}>
         <div className={`relative bg-gradient-to-br from-dark-800 to-dark-900 rounded-2xl overflow-hidden shadow-soft-lg mx-auto transition-all duration-300 ${
-          isPlaying ? 'aspect-[9/16] h-[480px] max-h-full' : 'aspect-[9/16] max-h-56'
+          isPlaying ? 'w-full max-w-[320px] h-auto' : 'aspect-[9/16] max-h-56'
         }`}>
           {/* Decorative glow */}
           {!isPlaying && (
@@ -198,11 +200,12 @@ export function VideoReadyPage() {
               <video
                 ref={videoRef}
                 src={videoUrl}
-                className="w-full h-full object-cover cursor-pointer bg-black"
+                className="w-full h-auto max-h-[500px] object-contain cursor-pointer bg-black"
                 onClick={handleVideoClick}
                 onEnded={() => setIsPlaying(false)}
                 controls
                 playsInline
+                autoPlay
               />
             ) : (
               <>

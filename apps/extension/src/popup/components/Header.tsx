@@ -2,7 +2,7 @@ import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 
 export function Header() {
-  const { user, logout, isAuthenticated, isRefreshingCredits, refreshCredits } = useAuthStore();
+  const { user, logout, isAuthenticated } = useAuthStore();
   const { currentPage, setPage } = useUIStore();
 
   return (

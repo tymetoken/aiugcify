@@ -42,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true,
       error: null,
       isFirstLogin: false,
+      isRefreshingCredits: false,
 
       initialize: async () => {
         const { accessToken, refreshToken } = get();
@@ -167,6 +168,34 @@ export const useAuthStore = create<AuthState>()(
       clearError: () => set({ error: null }),
 
       setFirstLogin: (value: boolean) => set({ isFirstLogin: value }),
+
+      refreshCredits: async () => {
+        set({ isRefreshingCredits: true });
+        try {
+          const { balance } = await apiClient.getBalance();
+          const { user } = get();
+          if (user) {
+            set({ user: { ...user, creditBalance: balance } });
+          }
+        } catch {
+          // Ignore errors
+        }
+        set({ isRefreshingCredits: false });
+      },
+
+      startCreditAutoRefresh: () => {
+        if (creditRefreshIntervalId) return;
+        creditRefreshIntervalId = setInterval(() => {
+          get().refreshCredits();
+        }, CREDIT_REFRESH_INTERVAL);
+      },
+
+      stopCreditAutoRefresh: () => {
+        if (creditRefreshIntervalId) {
+          clearInterval(creditRefreshIntervalId);
+          creditRefreshIntervalId = null;
+        }
+      },
     }),
     {
       name: 'auth-storage',
