@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { sendError } from '../utils/response.js';
 import { logger } from '../utils/logger.js';
@@ -49,6 +50,20 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   }
   if (err.name === 'TokenExpiredError') {
     return sendError(res, 401, ErrorCodes.TOKEN_EXPIRED, 'Token expired');
+  }
+
+  // Handle Prisma errors
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    logger.error({ prismaCode: err.code, meta: err.meta }, 'Prisma known error');
+    return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, `Database error: ${err.code}`);
+  }
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    logger.error({ message: err.message }, 'Prisma initialization error');
+    return sendError(res, 503, ErrorCodes.INTERNAL_ERROR, 'Database connection failed');
+  }
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    logger.error({ message: err.message }, 'Prisma validation error');
+    return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, 'Database query validation failed');
   }
 
   // Handle unknown errors
