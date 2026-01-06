@@ -50,6 +50,10 @@ export const schemas = {
     refreshToken: z.string().min(1, 'Refresh token is required'),
   }),
 
+  googleAuth: z.object({
+    idToken: z.string().min(1, 'Google ID token is required'),
+  }),
+
   // Video schemas
   generateScript: z.object({
     productData: z.object({

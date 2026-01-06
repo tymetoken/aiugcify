@@ -137,6 +137,13 @@ class ApiClient {
     return this.request<{ user: UserPublic }>('/auth/me');
   }
 
+  async googleAuth(idToken: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+  }
+
   // Credits endpoints
   async getPackages(): Promise<{ packages: CreditPackage[] }> {
     return this.request<{ packages: CreditPackage[] }>('/credits/packages');

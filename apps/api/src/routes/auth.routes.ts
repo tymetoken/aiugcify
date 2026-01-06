@@ -29,4 +29,11 @@ authRoutes.post(
 
 authRoutes.post('/logout', asyncHandler(authController.logout));
 
+authRoutes.post(
+  '/google',
+  authRateLimit,
+  validate(schemas.googleAuth),
+  asyncHandler(authController.googleAuth)
+);
+
 authRoutes.get('/me', asyncHandler(authMiddleware), asyncHandler(authController.me));

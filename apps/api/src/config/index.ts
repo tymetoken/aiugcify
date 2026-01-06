@@ -45,6 +45,9 @@ const envSchema = z.object({
 
   // Freemium
   FREE_CREDITS_ON_SIGNUP: z.string().default('2'),
+
+  // Google OAuth
+  GOOGLE_CLIENT_ID: z.string().optional(),
 });
 
 function loadConfig() {

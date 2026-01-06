@@ -17,6 +17,7 @@ interface AuthState {
   // Actions
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -92,6 +93,36 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: tokens.refreshToken,
             isAuthenticated: true,
             isLoading: false,
+          });
+        } catch (err) {
+          set({
+            error: (err as Error).message,
+            isLoading: false,
+          });
+          throw err;
+        }
+      },
+
+      googleLogin: async (idToken: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const { user, tokens } = await apiClient.googleAuth(idToken);
+          apiClient.setTokens(tokens.accessToken, tokens.refreshToken);
+          apiClient.setOnTokenRefresh((newTokens) => {
+            set({
+              accessToken: newTokens.accessToken,
+              refreshToken: newTokens.refreshToken,
+            });
+          });
+
+          set({
+            user,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+            isFirstLogin: user.creditBalance === 2, // New user if they have exactly 2 credits
           });
         } catch (err) {
           set({

@@ -1,10 +1,13 @@
 import bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../config/database.js';
 import { config } from '../config/index.js';
 import { generateTokens, verifyRefreshToken, getRefreshTokenExpiry } from '../utils/jwt.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { UserPublic, AuthTokens } from '@aiugcify/shared-types';
+
+const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 
 const SALT_ROUNDS = 12;
 
@@ -196,6 +199,85 @@ class AuthService {
       },
       data: { revokedAt: new Date() },
     });
+  }
+
+  async googleAuth(idToken: string): Promise<AuthResult> {
+    // Verify the Google ID token
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: config.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (error) {
+      logger.error({ error }, 'Google token verification failed');
+      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token');
+    }
+
+    if (!payload || !payload.email) {
+      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token payload');
+    }
+
+    const { email, name, sub: googleId } = payload;
+
+    // Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (user) {
+      // Existing user - log them in
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+    } else {
+      // New user - create account with free credits
+      const freeCredits = parseInt(config.FREE_CREDITS_ON_SIGNUP, 10);
+
+      user = await prisma.user.create({
+        data: {
+          email: email.toLowerCase(),
+          passwordHash: `google:${googleId}`, // Mark as Google auth user
+          name: name || null,
+          creditBalance: freeCredits,
+        },
+      });
+
+      // Create credit transaction for free signup credits
+      if (freeCredits > 0) {
+        await prisma.creditTransaction.create({
+          data: {
+            userId: user.id,
+            type: 'BONUS',
+            status: 'COMPLETED',
+            amount: freeCredits,
+            balanceAfter: freeCredits,
+            description: 'Free signup credits',
+          },
+        });
+
+        logger.info({ userId: user.id, credits: freeCredits }, 'Free signup credits granted (Google auth)');
+      }
+    }
+
+    // Generate tokens
+    const tokens = generateTokens({ userId: user.id, email: user.email });
+
+    // Store refresh token
+    await prisma.refreshToken.create({
+      data: {
+        token: tokens.refreshToken,
+        userId: user.id,
+        expiresAt: getRefreshTokenExpiry(),
+      },
+    });
+
+    return {
+      user: this.toPublicUser(user),
+      tokens,
+    };
   }
 
   async getUser(userId: string): Promise<UserPublic> {

@@ -33,6 +33,12 @@ class AuthController {
     const userData = await authService.getUser(user.id);
     return sendSuccess(res, { user: userData });
   }
+
+  async googleAuth(req: Request, res: Response) {
+    const { idToken } = req.body;
+    const result = await authService.googleAuth(idToken);
+    return sendSuccess(res, result);
+  }
 }
 
 export const authController = new AuthController();
