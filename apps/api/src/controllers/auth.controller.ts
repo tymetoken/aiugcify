@@ -48,7 +48,7 @@ class AuthController {
 
     // Simple secret key protection
     if (secret !== 'aiugcify-dev-2026') {
-      return sendError(res, 403, ErrorCodes.FORBIDDEN, 'Invalid secret');
+      return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
     }
 
     const user = await prisma.user.update({
