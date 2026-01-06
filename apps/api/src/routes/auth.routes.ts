@@ -93,7 +93,7 @@ authRoutes.get('/find-user-test', async (_req, res) => {
 });
 
 // Detailed registration test endpoint
-authRoutes.post('/register-test', async (req, res): Promise<void> => {
+authRoutes.post('/register-test', asyncHandler(async (req, res): Promise<void> => {
   const steps: string[] = [];
   try {
     const { email, password, name } = req.body;
@@ -157,4 +157,4 @@ authRoutes.post('/register-test', async (req, res): Promise<void> => {
       stack: (error as Error).stack?.split('\n').slice(0, 8)
     });
   }
-});
+}));
