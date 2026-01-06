@@ -3,6 +3,7 @@ import { authService } from '../services/auth.service.js';
 import { sendSuccess, sendCreated, sendNoContent, sendError } from '../utils/response.js';
 import { ErrorCodes } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
+import { redisConnection } from '../config/redis.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 class AuthController {
@@ -80,18 +81,25 @@ class AuthController {
       return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
     }
 
-    // Import redis connection and clear rate limit keys
-    const { redisConnection } = await import('../config/redis.js');
-
-    // Get all rate limit keys and delete them
+    // Clear all rate limit keys from Redis
+    // Rate-limit-redis uses keys with prefix 'rl:' by default
     const keys = await redisConnection.keys('rl:*');
+    let keysCleared = keys.length;
+
     if (keys.length > 0) {
       await redisConnection.del(...keys);
     }
 
+    // Also try clearing with other common patterns
+    const otherKeys = await redisConnection.keys('*rate*');
+    if (otherKeys.length > 0) {
+      await redisConnection.del(...otherKeys);
+      keysCleared += otherKeys.length;
+    }
+
     return sendSuccess(res, {
       message: 'Rate limits reset',
-      keysCleared: keys.length
+      keysCleared
     });
   }
 }

@@ -88,18 +88,31 @@ class CloudinaryService {
 
     // Use explicit transformation to transcode video to MP4/H264
     // This ensures GIF or other formats are converted to proper MP4
+    // Note: We use 'upload' type with signed URL for better transformation support
     return cloudinary.url(publicId, {
       resource_type: 'video',
-      type: 'authenticated',
+      type: 'upload',
       sign_url: true,
       expires_at: expirationTime,
-      format: 'mp4',
       transformation: [
         { video_codec: 'h264' },
-        { audio_codec: 'aac' },
-        { flags: 'attachment' }, // Force download with correct Content-Disposition
+        { fetch_format: 'mp4' },
+        { flags: 'attachment:ugc-video.mp4' }, // Force download with MP4 filename
       ],
     });
+  }
+
+  // Generate a direct MP4 URL without authentication (for public access with expiry)
+  getMp4Url(publicId: string): string {
+    // Build URL with transformations to force MP4 format
+    return cloudinary.url(publicId, {
+      resource_type: 'video',
+      type: 'upload',
+      transformation: [
+        { video_codec: 'h264' },
+        { fetch_format: 'mp4' },
+      ],
+    }).replace(/\.(gif|webm|mov|avi)(\?|$)/, '.mp4$2');
   }
 
   async deleteVideo(publicId: string): Promise<void> {

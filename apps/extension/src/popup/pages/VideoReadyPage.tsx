@@ -31,22 +31,38 @@ export function VideoReadyPage() {
       // First try to get a fresh download URL from the API
       const { downloadUrl } = await apiClient.getDownloadUrl(currentVideo.id);
 
-      // Ensure URL requests MP4 format by adding/modifying format parameter
+      // Ensure URL requests MP4 format by modifying Cloudinary URL
       let mp4Url = downloadUrl;
       if (downloadUrl.includes('cloudinary.com') || downloadUrl.includes('res.cloudinary.com')) {
-        // Add vc_h264 transformation to force MP4/H264 format if not already present
-        if (!downloadUrl.includes('vc_h264') && !downloadUrl.includes('f_mp4')) {
-          // For signed URLs, transformation goes after the signature part
-          // Pattern: /video/authenticated/s--xxx--/vc_h264,f_mp4/v123/...
-          mp4Url = downloadUrl.replace(
-            /(\/video\/(?:authenticated|upload)\/(?:s--[^/]+--\/)?)(?!vc_h264|f_mp4)/,
-            '$1vc_h264,f_mp4/'
-          );
+        // Check if the URL already has MP4 transformations
+        const hasVideoCodec = downloadUrl.includes('vc_h264') || downloadUrl.includes('vc_auto');
+        const hasMp4Format = downloadUrl.includes('f_mp4') || downloadUrl.includes('fetch_format') || downloadUrl.match(/\.mp4(\?|$)/);
+
+        if (!hasVideoCodec || !hasMp4Format) {
+          // Add vc_h264,f_mp4 transformation to force MP4/H264 format
+          // Pattern matches: /video/upload/ or /video/upload/s--xxx--/
+          const transformPattern = /(\/video\/upload\/)(s--[^/]+--\/)?/;
+          if (transformPattern.test(downloadUrl)) {
+            mp4Url = downloadUrl.replace(
+              transformPattern,
+              '$1$2vc_h264,f_mp4/'
+            );
+          }
         }
-        // Ensure .mp4 extension - handle both with and without existing extension
-        if (!mp4Url.match(/\.mp4(\?|$)/)) {
-          // Replace any existing extension or add .mp4 before query string
-          mp4Url = mp4Url.replace(/(\.[^./?]+)?(\?|$)/, '.mp4$2');
+
+        // Ensure .mp4 extension - handle GIF, WebM, and other formats
+        if (!mp4Url.match(/\.mp4(\?|$)/i)) {
+          // Replace common video extensions with .mp4
+          mp4Url = mp4Url.replace(/\.(gif|webm|mov|avi|mkv)(\?|$)/i, '.mp4$2');
+          // If no extension found before query string, add .mp4
+          if (!mp4Url.match(/\.\w+(\?|$)/)) {
+            const queryIndex = mp4Url.indexOf('?');
+            if (queryIndex > -1) {
+              mp4Url = mp4Url.slice(0, queryIndex) + '.mp4' + mp4Url.slice(queryIndex);
+            } else {
+              mp4Url += '.mp4';
+            }
+          }
         }
       }
 
@@ -99,16 +115,23 @@ export function VideoReadyPage() {
         if (videoUrl) {
           // Force MP4 format for Cloudinary URLs
           if (videoUrl.includes('cloudinary.com') || videoUrl.includes('res.cloudinary.com')) {
-            // Add vc_h264 transformation to force MP4/H264 format
-            if (!videoUrl.includes('vc_h264') && !videoUrl.includes('f_mp4')) {
-              videoUrl = videoUrl.replace(
-                /(\/video\/(?:authenticated|upload)\/(?:s--[^/]+--\/)?)(?!vc_h264|f_mp4)/,
-                '$1vc_h264,f_mp4/'
-              );
+            // Check if the URL already has MP4 transformations
+            const hasVideoCodec = videoUrl.includes('vc_h264') || videoUrl.includes('vc_auto');
+            const hasMp4Format = videoUrl.includes('f_mp4') || videoUrl.includes('fetch_format') || videoUrl.match(/\.mp4(\?|$)/);
+
+            if (!hasVideoCodec || !hasMp4Format) {
+              // Add vc_h264,f_mp4 transformation to force MP4/H264 format
+              const transformPattern = /(\/video\/upload\/)(s--[^/]+--\/)?/;
+              if (transformPattern.test(videoUrl)) {
+                videoUrl = videoUrl.replace(
+                  transformPattern,
+                  '$1$2vc_h264,f_mp4/'
+                );
+              }
             }
-            // Ensure .mp4 extension
-            if (!videoUrl.match(/\.mp4(\?|$)/)) {
-              videoUrl = videoUrl.replace(/(\.[^./?]+)?(\?|$)/, '.mp4$2');
+            // Ensure .mp4 extension - handle GIF, WebM, and other formats
+            if (!videoUrl.match(/\.mp4(\?|$)/i)) {
+              videoUrl = videoUrl.replace(/\.(gif|webm|mov|avi|mkv)(\?|$)/i, '.mp4$2');
             }
           }
 

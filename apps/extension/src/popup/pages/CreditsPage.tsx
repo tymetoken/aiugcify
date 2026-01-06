@@ -7,7 +7,7 @@ import { LoginModal } from '../components/LoginModal';
 import type { CreditPackage, SubscriptionPlan, UserSubscription } from '@aiugcify/shared-types';
 
 export function CreditsPage() {
-  const { user, refreshUser, isAuthenticated } = useAuthStore();
+  const { refreshUser, isAuthenticated } = useAuthStore();
   const { setPage } = useUIStore();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -130,16 +130,6 @@ export function CreditsPage() {
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-gradient-to-b from-slate-50 to-white">
       <div className="p-4 space-y-4">
-        {/* Balance */}
-        {isAuthenticated && (
-          <div className="flex justify-end">
-            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-slate-100">
-              <span className="text-sm text-slate-500">Credits:</span>
-              <span className="font-bold text-slate-800">{user?.creditBalance || 0}</span>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <div className="text-center">
           <h1 className="text-xl font-bold text-slate-800">Choose Your Plan</h1>

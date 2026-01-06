@@ -31,10 +31,17 @@ const GENERATION_STAGES = [
 ];
 
 export function GeneratingPage() {
-  const { currentVideo, generationProgress, error, pollVideoStatus, isGenerating } = useVideoStore();
+  const { currentVideo, generationProgress, error, pollVideoStatus, isGenerating, reset, clearError } = useVideoStore();
   const { scrapedProduct } = useProductStore();
   const { setPage } = useUIStore();
   const [elapsedTime, setElapsedTime] = useState(0);
+
+  const handleBackToDashboard = () => {
+    // Clear any stale state and errors before going back
+    clearError();
+    reset();
+    setPage('dashboard');
+  };
 
   useEffect(() => {
     if (
@@ -99,7 +106,7 @@ export function GeneratingPage() {
         <h3 className="text-xl font-bold text-dark-800 mt-6 mb-2">Generation Failed</h3>
         <p className="text-sm text-dark-500 text-center max-w-xs mb-6">{error}</p>
         <button
-          onClick={() => setPage('dashboard')}
+          onClick={handleBackToDashboard}
           className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-accent-500 text-white font-medium rounded-xl shadow-glow hover:shadow-glow-lg transition-all hover:scale-105"
         >
           Back to Dashboard

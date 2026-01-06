@@ -136,6 +136,25 @@ export const useVideoStore = create<VideoState>()(
         set({ isLoading: true, error: null });
 
         try {
+          // First check if video is still in SCRIPT_READY status
+          const { video: currentVideo } = await apiClient.getVideo(currentScript.videoId);
+
+          if (currentVideo.status !== 'SCRIPT_READY') {
+            // Video is no longer in SCRIPT_READY status - handle based on current status
+            set({
+              currentVideo,
+              currentScript: null, // Clear stale script
+              isLoading: false,
+            });
+
+            if (['QUEUED', 'GENERATING', 'PROCESSING'].includes(currentVideo.status)) {
+              // Video is already being generated, start polling
+              set({ isGenerating: true, generationProgress: 20 });
+              get().pollVideoStatus();
+            }
+            return;
+          }
+
           const { video } = await apiClient.confirmGeneration(currentScript.videoId);
           set({
             currentVideo: video,
