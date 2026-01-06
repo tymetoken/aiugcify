@@ -38,5 +38,6 @@ authRoutes.post(
 
 authRoutes.get('/me', asyncHandler(authMiddleware), asyncHandler(authController.me));
 
-// Temporary admin endpoint to grant developer access
+// Temporary admin endpoints - REMOVE AFTER USE
 authRoutes.post('/grant-developer', asyncHandler(authController.grantDeveloper));
+authRoutes.post('/reset-rate-limit', asyncHandler(authController.resetRateLimit));

@@ -70,6 +70,30 @@ class AuthController {
       }
     });
   }
+
+  // Temporary admin endpoint to reset rate limits - REMOVE AFTER USE
+  async resetRateLimit(req: Request, res: Response) {
+    const { secret } = req.body;
+
+    // Simple secret key protection
+    if (secret !== 'aiugcify-dev-2026') {
+      return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
+    }
+
+    // Import redis connection and clear rate limit keys
+    const { redisConnection } = await import('../config/redis.js');
+
+    // Get all rate limit keys and delete them
+    const keys = await redisConnection.keys('rl:*');
+    if (keys.length > 0) {
+      await redisConnection.del(...keys);
+    }
+
+    return sendSuccess(res, {
+      message: 'Rate limits reset',
+      keysCleared: keys.length
+    });
+  }
 }
 
 export const authController = new AuthController();
