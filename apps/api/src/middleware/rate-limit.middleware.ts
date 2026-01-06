@@ -5,12 +5,23 @@ import { config, isDevelopment } from '../config/index.js';
 import { ErrorCodes } from '../utils/errors.js';
 
 const createStore = () => {
-  return new RedisStore({
-    // @ts-expect-error - RedisStore sendCommand type mismatch with ioredis
-    sendCommand: async (...args: string[]) => {
-      return redisConnection.call(args[0], ...args.slice(1));
-    },
-  });
+  try {
+    return new RedisStore({
+      // @ts-expect-error - RedisStore sendCommand type mismatch with ioredis
+      sendCommand: async (...args: string[]) => {
+        try {
+          return await redisConnection.call(args[0], ...args.slice(1));
+        } catch (error) {
+          console.error('Redis rate limit command error:', error);
+          // Return null to allow request through on Redis failure
+          return null;
+        }
+      },
+    });
+  } catch (error) {
+    console.error('Failed to create Redis store:', error);
+    return undefined;
+  }
 };
 
 // General API rate limit
