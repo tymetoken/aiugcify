@@ -4,11 +4,13 @@ import { useUIStore } from '../store/uiStore';
 import { apiClient } from '@/shared/api-client';
 import { Button } from '../components/Button';
 import { LoginModal } from '../components/LoginModal';
+import { Toast, useToast } from '../components/Toast';
 import type { CreditPackage, SubscriptionPlan, UserSubscription } from '@aiugcify/shared-types';
 
 export function CreditsPage() {
   const { refreshUser, isAuthenticated } = useAuthStore();
   const { setPage } = useUIStore();
+  const { toast, showToast, hideToast } = useToast();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const [packages, setPackages] = useState<CreditPackage[]>([]);
@@ -77,7 +79,7 @@ export function CreditsPage() {
       }, 5000);
     } catch (error) {
       console.error('Failed to create checkout:', error);
-      alert('Failed to create checkout: ' + (error as Error).message);
+      showToast('Failed to create checkout: ' + (error as Error).message, 'error');
     }
     setPurchasingId(null);
   };
@@ -117,10 +119,10 @@ export function CreditsPage() {
       await apiClient.changeSubscriptionPlan(planId, billingInterval);
       await refreshUser();
       await loadData();
-      alert('Plan changed successfully!');
+      showToast('Plan changed successfully!', 'success');
     } catch (error) {
       console.error('Failed to change plan:', error);
-      alert('Failed to change plan: ' + (error as Error).message);
+      showToast('Failed to change plan: ' + (error as Error).message, 'error');
     }
     setPurchasingId(null);
   };
@@ -182,6 +184,14 @@ export function CreditsPage() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-gradient-to-b from-slate-50 to-white">
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      )}
       <div className="p-4 space-y-4">
         {/* Header */}
         <div className="text-center">
