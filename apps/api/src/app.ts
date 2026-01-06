@@ -80,6 +80,9 @@ export function createApp() {
     `);
   });
 
+  // Webhook routes - MUST be before CORS and body parsing (Stripe needs raw body, no Origin header)
+  app.use('/api/v1/webhooks', webhooksRoutes);
+
   // Security headers with strict CSP
   app.use(
     helmet({
@@ -155,9 +158,6 @@ export function createApp() {
       allowedHeaders: ['Content-Type', 'Authorization'],
     })
   );
-
-  // Webhook routes need raw body (before JSON parsing)
-  app.use('/api/v1/webhooks', webhooksRoutes);
 
   // Body parsing
   app.use(express.json({ limit: '10mb' }));
