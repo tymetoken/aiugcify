@@ -82,13 +82,29 @@ export function CreditsPage() {
     setPurchasingId(null);
   };
 
+  // Calculate price per video
+  const getPricePerVideo = (plan: SubscriptionPlan, isYearly: boolean) => {
+    const totalPrice = isYearly ? plan.yearlyPriceInCents : plan.monthlyPriceInCents * 12;
+    const totalVideos = isYearly
+      ? plan.yearlyCredits + plan.yearlyBonusCredits
+      : plan.monthlyCredits * 12;
+    return (totalPrice / 100 / totalVideos).toFixed(2);
+  };
+
+  // Calculate yearly savings
+  const getYearlySavings = (plan: SubscriptionPlan) => {
+    const monthlyTotal = plan.monthlyPriceInCents * 12;
+    const yearlyTotal = plan.yearlyPriceInCents;
+    return Math.round((monthlyTotal - yearlyTotal) / 100);
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col h-full p-4 space-y-4">
         <div className="h-12 bg-slate-100 rounded-lg animate-pulse" />
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 bg-slate-100 rounded-xl animate-pulse" />
+            <div key={i} className="h-32 bg-slate-100 rounded-2xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -99,14 +115,14 @@ export function CreditsPage() {
     subscription?.plan.id === planId && subscription?.status === 'ACTIVE';
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col h-full overflow-y-auto bg-gradient-to-b from-slate-50 to-white">
       <div className="p-4 space-y-4">
         {/* Balance */}
         <div className="flex items-center justify-between">
-          <button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-slate-600">
+          <button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-slate-600 transition-colors">
             ← Back
           </button>
-          <div className="flex items-center gap-2 bg-slate-100 rounded-full px-3 py-1.5">
+          <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-slate-100">
             <span className="text-sm text-slate-500">Credits:</span>
             <span className="font-bold text-slate-800">{user?.creditBalance || 0}</span>
           </div>
@@ -118,12 +134,12 @@ export function CreditsPage() {
           <p className="text-sm text-slate-500 mb-3">Cancel anytime.</p>
 
           {/* Billing Toggle */}
-          <div className="inline-flex items-center bg-slate-100 rounded-full p-1">
+          <div className="inline-flex items-center bg-slate-100 rounded-full p-1 shadow-inner">
             <button
               onClick={() => setBillingInterval('monthly')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 billingInterval === 'monthly'
-                  ? 'bg-white text-slate-800 shadow-sm'
+                  ? 'bg-white text-slate-800 shadow-md'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -131,20 +147,22 @@ export function CreditsPage() {
             </button>
             <button
               onClick={() => setBillingInterval('yearly')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 billingInterval === 'yearly'
-                  ? 'bg-white text-slate-800 shadow-sm'
+                  ? 'bg-white text-slate-800 shadow-md'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Yearly
-              <span className="ml-1 text-xs text-green-600 font-bold">-17%</span>
+              <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold">
+                Save 17%
+              </span>
             </button>
           </div>
         </div>
 
         {/* Subscription Plans */}
-        <div className="space-y-3">
+        <div className="space-y-4 pt-2">
           {subscriptionPlans.map((plan) => {
             const isYearly = billingInterval === 'yearly';
             const price = isYearly
@@ -155,42 +173,56 @@ export function CreditsPage() {
               : plan.monthlyCredits;
             const isCurrent = isCurrentPlan(plan.id);
             const isPopular = plan.badgeText === 'Most Popular';
+            const pricePerVideo = getPricePerVideo(plan, isYearly);
+            const savings = getYearlySavings(plan);
 
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-xl border-2 p-4 transition-all ${
+                className={`relative rounded-2xl p-5 transition-all duration-200 ${
                   isCurrent
-                    ? 'border-green-500 bg-green-50'
+                    ? 'bg-green-50 border-2 border-green-500 shadow-lg shadow-green-500/10'
                     : isPopular
-                      ? 'border-primary-500 bg-primary-50/30 shadow-md'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                      ? 'bg-gradient-to-br from-primary-50 via-white to-accent-50 border-2 border-primary-400 shadow-xl shadow-primary-500/20 hover:shadow-2xl hover:scale-[1.02]'
+                      : 'bg-white border-2 border-slate-200 hover:border-slate-300 hover:shadow-lg'
                 }`}
               >
                 {isPopular && !isCurrent && (
-                  <span className="absolute -top-2.5 left-4 bg-primary-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    RECOMMENDED
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+                    ✨ RECOMMENDED
                   </span>
                 )}
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold text-slate-800">{plan.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-800">{plan.name}</h3>
                     <p className="text-sm text-slate-500">
                       {totalVideos} videos/{isYearly ? 'year' : 'month'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-slate-800">
+                    <p className="text-3xl font-extrabold text-slate-800">
                       ${price}<span className="text-sm font-normal text-slate-400">/mo</span>
                     </p>
                   </div>
                 </div>
 
+                {/* Value indicators */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    💰 ${pricePerVideo}/video
+                  </span>
+                  {isYearly && savings > 0 && (
+                    <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">
+                      🎉 Save ${savings}/year
+                    </span>
+                  )}
+                </div>
+
                 {isCurrent ? (
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-sm text-green-600 font-semibold flex items-center gap-1.5">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       Current Plan
@@ -198,7 +230,7 @@ export function CreditsPage() {
                     <button
                       onClick={handleCancelSubscription}
                       disabled={purchasingId === 'cancel'}
-                      className="text-xs text-slate-400 hover:text-red-500"
+                      className="text-xs text-slate-400 hover:text-red-500 transition-colors"
                     >
                       {purchasingId === 'cancel' ? 'Canceling...' : 'Cancel'}
                     </button>
@@ -207,10 +239,14 @@ export function CreditsPage() {
                   <Button
                     onClick={() => handleSubscribe(plan.id)}
                     variant={isPopular ? 'primary' : 'outline'}
-                    className="w-full mt-3"
+                    className={`w-full mt-4 ${
+                      isPopular
+                        ? 'bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 shadow-lg shadow-primary-500/30 text-white font-semibold'
+                        : ''
+                    }`}
                     isLoading={purchasingId === plan.id}
                   >
-                    Get Started
+                    {isPopular ? '🚀 Start Creating' : 'Get Started'}
                   </Button>
                 )}
               </div>
@@ -222,7 +258,7 @@ export function CreditsPage() {
         <div className="text-center pt-2">
           <button
             onClick={() => setShowOneTime(!showOneTime)}
-            className="text-sm text-slate-400 hover:text-slate-600"
+            className="text-sm text-slate-400 hover:text-primary-500 transition-colors font-medium"
           >
             {showOneTime ? 'Hide one-time packages ↑' : 'Need credits now? Buy once →'}
           </button>
@@ -231,29 +267,48 @@ export function CreditsPage() {
         {/* One-time packages */}
         {showOneTime && (
           <div className="space-y-2 pt-2">
-            <p className="text-xs text-slate-400 text-center">One-time purchase, no subscription</p>
-            {packages.map((pkg) => (
-              <div
-                key={pkg.id}
-                className="flex items-center justify-between bg-slate-50 rounded-lg p-3"
-              >
-                <div>
-                  <span className="font-medium text-slate-700">{pkg.name}</span>
-                  <span className="text-sm text-slate-400 ml-2">{pkg.credits} videos</span>
+            <p className="text-xs text-slate-400 text-center mb-3">One-time purchase, no subscription</p>
+            {packages.map((pkg, index) => {
+              const pricePerVideo = (pkg.priceInCents / 100 / pkg.credits).toFixed(2);
+              const isBestValue = index === packages.length - 1; // Last package is usually best value
+
+              return (
+                <div
+                  key={pkg.id}
+                  className={`flex items-center justify-between rounded-xl p-4 transition-all duration-200 hover:shadow-md ${
+                    isBestValue
+                      ? 'bg-gradient-to-r from-accent-50 to-white border border-accent-200'
+                      : 'bg-white border border-slate-100 hover:border-slate-200'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-700">{pkg.name}</span>
+                      {isBestValue && (
+                        <span className="text-[10px] bg-accent-500 text-white px-2 py-0.5 rounded-full font-bold">
+                          BEST VALUE
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm text-slate-500">{pkg.credits} videos</span>
+                      <span className="text-xs text-green-600 font-medium">${pricePerVideo}/video</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-slate-800">${pkg.priceInCents / 100}</span>
+                    <Button
+                      onClick={() => handlePurchase(pkg.id)}
+                      variant={isBestValue ? 'secondary' : 'ghost'}
+                      size="sm"
+                      isLoading={purchasingId === pkg.id}
+                    >
+                      Buy
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-800">${pkg.priceInCents / 100}</span>
-                  <Button
-                    onClick={() => handlePurchase(pkg.id)}
-                    variant="ghost"
-                    size="sm"
-                    isLoading={purchasingId === pkg.id}
-                  >
-                    Buy
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
