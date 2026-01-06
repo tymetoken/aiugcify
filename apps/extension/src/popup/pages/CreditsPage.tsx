@@ -465,15 +465,38 @@ export function CreditsPage() {
 
                 {/* Upgrade/Downgrade indicator for subscribed users */}
                 {hasActiveSubscription && canChange && changeType && (
-                  <span className={`absolute -top-3 right-4 text-xs font-bold px-3 py-1 rounded-full shadow ${
+                  <div className={`absolute -top-3 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg ${
                     changeType === 'upgrade'
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-400 shadow-emerald-500/40'
                       : changeType === 'downgrade'
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-blue-500 text-white'
+                        ? 'bg-gradient-to-r from-slate-600 to-slate-500 shadow-slate-500/40'
+                        : 'bg-gradient-to-r from-blue-500 to-indigo-400 shadow-blue-500/40'
                   }`}>
-                    {changeType === 'upgrade' ? '⬆️ UPGRADE' : changeType === 'downgrade' ? '⬇️ DOWNGRADE' : '🔄 SWITCH'}
-                  </span>
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                      changeType === 'upgrade'
+                        ? 'bg-white/25'
+                        : changeType === 'downgrade'
+                          ? 'bg-white/20'
+                          : 'bg-white/25'
+                    }`}>
+                      {changeType === 'upgrade' ? (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                        </svg>
+                      ) : changeType === 'downgrade' ? (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      ) : (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-bold text-white tracking-wide">
+                      {changeType === 'upgrade' ? 'UPGRADE' : changeType === 'downgrade' ? 'DOWNGRADE' : 'SWITCH'}
+                    </span>
+                  </div>
                 )}
 
                 <div className="flex items-start justify-between">
