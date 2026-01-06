@@ -1,14 +1,20 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useProductStore } from '../store/productStore';
 import { useUIStore } from '../store/uiStore';
 import { useVideoStore } from '../store/videoStore';
+import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/Button';
+import { UpgradeModal } from '../components/UpgradeModal';
 
 export function DashboardPage() {
   const { isOnProductPage, scrapedProduct, scrapeCurrentPage, isLoading } = useProductStore();
   const { setPage } = useUIStore();
   const { setAdditionalNotes } = useVideoStore();
+  const { user } = useAuthStore();
   const previousProductUrl = useRef<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const hasCredits = (user?.creditBalance ?? 0) > 0;
 
   // Clear additional notes when product URL changes (different product)
   useEffect(() => {
@@ -20,6 +26,12 @@ export function DashboardPage() {
   }, [scrapedProduct?.url, setAdditionalNotes]);
 
   const handleStartGeneration = async () => {
+    // Check if user has credits
+    if (!hasCredits) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     // Clear notes when starting fresh generation
     setAdditionalNotes('');
 
@@ -158,17 +170,49 @@ export function DashboardPage() {
         </div>
       )}
 
+      {/* No Credits Warning */}
+      {!hasCredits && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <WarningIcon className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-amber-800">No credits remaining</p>
+              <p className="text-sm text-amber-600 mt-0.5">
+                You've used your free videos. Upgrade to continue creating.
+              </p>
+              <button
+                onClick={() => setPage('credits')}
+                className="mt-2 text-sm font-semibold text-amber-700 hover:text-amber-900 underline"
+              >
+                View pricing plans
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Action Button */}
       <Button
         onClick={handleStartGeneration}
-        className="w-full"
+        className={`w-full ${!hasCredits ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' : ''}`}
         size="lg"
         disabled={!isOnProductPage}
         isLoading={isLoading}
       >
         <span className="flex items-center gap-2">
-          <SparkleIcon className="w-5 h-5" />
-          {scrapedProduct ? 'Generate UGC Video' : 'Scrape & Generate'}
+          {hasCredits ? (
+            <>
+              <SparkleIcon className="w-5 h-5" />
+              {scrapedProduct ? 'Generate UGC Video' : 'Scrape & Generate'}
+            </>
+          ) : (
+            <>
+              <UpgradeIcon className="w-5 h-5" />
+              Upgrade to Generate
+            </>
+          )}
         </span>
       </Button>
 
@@ -196,6 +240,9 @@ export function DashboardPage() {
           <p className="text-xs text-dark-400 mt-0.5">Get more videos</p>
         </button>
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     </div>
   );
 }
@@ -256,6 +303,24 @@ function RefreshIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M23 4v6h-6M1 20v-6h6" />
       <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+    </svg>
+  );
+}
+
+function WarningIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+function UpgradeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
     </svg>
   );
 }
