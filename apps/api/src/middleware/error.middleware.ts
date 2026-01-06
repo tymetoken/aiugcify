@@ -66,12 +66,13 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, 'Database query validation failed');
   }
 
-  // Handle unknown errors
+  // Handle unknown errors - temporarily show details for debugging
+  const errorMessage = `${err.name}: ${err.message}`;
   return sendError(
     res,
     500,
     ErrorCodes.INTERNAL_ERROR,
-    process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
+    errorMessage
   );
 }
 
