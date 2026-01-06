@@ -7,6 +7,191 @@ import { LoginModal } from '../components/LoginModal';
 import { Toast, useToast } from '../components/Toast';
 import type { CreditPackage, SubscriptionPlan, UserSubscription } from '@aiugcify/shared-types';
 
+interface PlanChangeModalProps {
+  currentPlan: SubscriptionPlan;
+  currentInterval: string;
+  targetPlan: SubscriptionPlan;
+  targetInterval: 'monthly' | 'yearly';
+  changeType: 'upgrade' | 'downgrade' | 'switch';
+  isLoading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function PlanChangeModal({
+  currentPlan,
+  currentInterval,
+  targetPlan,
+  targetInterval,
+  changeType,
+  isLoading,
+  onConfirm,
+  onCancel,
+}: PlanChangeModalProps) {
+  const isYearly = targetInterval === 'yearly';
+  const currentIsYearly = currentInterval === 'YEARLY';
+
+  const currentPrice = currentIsYearly
+    ? Math.round(currentPlan.yearlyPriceInCents / 100 / 12)
+    : Math.round(currentPlan.monthlyPriceInCents / 100);
+  const targetPrice = isYearly
+    ? Math.round(targetPlan.yearlyPriceInCents / 100 / 12)
+    : Math.round(targetPlan.monthlyPriceInCents / 100);
+
+  const currentCredits = currentIsYearly
+    ? currentPlan.yearlyCredits + currentPlan.yearlyBonusCredits
+    : currentPlan.monthlyCredits;
+  const targetCredits = isYearly
+    ? targetPlan.yearlyCredits + targetPlan.yearlyBonusCredits
+    : targetPlan.monthlyCredits;
+
+  const priceDiff = targetPrice - currentPrice;
+  const creditsDiff = targetCredits - currentCredits;
+
+  const config = {
+    upgrade: {
+      icon: '⬆️',
+      title: 'Upgrade Your Plan',
+      gradient: 'from-green-500 to-emerald-500',
+      bgGradient: 'from-green-50 to-emerald-50',
+      borderColor: 'border-green-200',
+      buttonGradient: 'from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600',
+      description: 'Get more videos and unlock your creative potential!',
+    },
+    downgrade: {
+      icon: '⬇️',
+      title: 'Change Your Plan',
+      gradient: 'from-amber-500 to-orange-500',
+      bgGradient: 'from-amber-50 to-orange-50',
+      borderColor: 'border-amber-200',
+      buttonGradient: 'from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600',
+      description: 'Adjust your plan to better fit your needs.',
+    },
+    switch: {
+      icon: '🔄',
+      title: 'Switch Billing Cycle',
+      gradient: 'from-blue-500 to-indigo-500',
+      bgGradient: 'from-blue-50 to-indigo-50',
+      borderColor: 'border-blue-200',
+      buttonGradient: 'from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600',
+      description: 'Change your billing frequency.',
+    },
+  };
+
+  const c = config[changeType];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className={`bg-gradient-to-r ${c.gradient} p-5 text-white`}>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{c.icon}</span>
+            <div>
+              <h3 className="text-lg font-bold">{c.title}</h3>
+              <p className="text-sm opacity-90">{c.description}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Comparison */}
+        <div className="p-5">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Current Plan */}
+            <div className="flex-1 bg-slate-50 rounded-xl p-3 border border-slate-200">
+              <p className="text-xs text-slate-400 mb-1">Current</p>
+              <p className="font-semibold text-slate-700">{currentPlan.name}</p>
+              <p className="text-sm text-slate-500">{currentCredits} videos</p>
+              <p className="text-lg font-bold text-slate-800">${currentPrice}/mo</p>
+            </div>
+
+            {/* Arrow */}
+            <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r ${c.gradient} flex items-center justify-center text-white`}>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </div>
+
+            {/* New Plan */}
+            <div className={`flex-1 bg-gradient-to-br ${c.bgGradient} rounded-xl p-3 border-2 ${c.borderColor}`}>
+              <p className="text-xs text-slate-500 mb-1">New</p>
+              <p className="font-semibold text-slate-800">{targetPlan.name}</p>
+              <p className="text-sm text-slate-600">{targetCredits} videos</p>
+              <p className="text-lg font-bold text-slate-900">${targetPrice}/mo</p>
+            </div>
+          </div>
+
+          {/* Changes Summary */}
+          <div className={`rounded-xl p-4 mb-4 bg-gradient-to-r ${c.bgGradient} border ${c.borderColor}`}>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">What changes</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Monthly price</span>
+                <span className={`text-sm font-semibold ${priceDiff > 0 ? 'text-amber-600' : priceDiff < 0 ? 'text-green-600' : 'text-slate-600'}`}>
+                  {priceDiff > 0 ? '+' : ''}{priceDiff === 0 ? 'No change' : `$${priceDiff}/mo`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Videos per {isYearly ? 'year' : 'month'}</span>
+                <span className={`text-sm font-semibold ${creditsDiff > 0 ? 'text-green-600' : creditsDiff < 0 ? 'text-amber-600' : 'text-slate-600'}`}>
+                  {creditsDiff > 0 ? '+' : ''}{creditsDiff === 0 ? 'No change' : creditsDiff}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Billing cycle</span>
+                <span className="text-sm font-semibold text-slate-700">
+                  {currentInterval === targetInterval.toUpperCase() ? 'No change' : `${currentIsYearly ? 'Yearly' : 'Monthly'} → ${isYearly ? 'Yearly' : 'Monthly'}`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Proration Note */}
+          <div className="bg-slate-50 rounded-xl p-3 mb-4 border border-slate-100">
+            <div className="flex gap-2">
+              <span className="text-lg">💡</span>
+              <p className="text-xs text-slate-500">
+                {changeType === 'upgrade'
+                  ? "You'll be charged a prorated amount for the upgrade. The difference is calculated based on your remaining billing cycle."
+                  : changeType === 'downgrade'
+                    ? "You'll receive a prorated credit that will be applied to your future invoices."
+                    : "Your billing cycle will be updated. Any price difference will be prorated."}
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 px-4 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isLoading}
+              className={`flex-1 py-3 px-4 rounded-xl bg-gradient-to-r ${c.buttonGradient} text-white font-semibold shadow-lg transition-all disabled:opacity-50`}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                `Confirm ${changeType === 'upgrade' ? 'Upgrade' : changeType === 'downgrade' ? 'Change' : 'Switch'}`
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CreditsPage() {
   const { refreshUser, isAuthenticated } = useAuthStore();
   const { setPage } = useUIStore();
@@ -20,7 +205,7 @@ export function CreditsPage() {
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [showOneTime, setShowOneTime] = useState(false);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('yearly');
-  const [changePlanConfirm, setChangePlanConfirm] = useState<{ planId: string; planName: string } | null>(null);
+  const [changePlanTarget, setChangePlanTarget] = useState<SubscriptionPlan | null>(null);
 
   useEffect(() => {
     loadData();
@@ -36,7 +221,6 @@ export function CreditsPage() {
       setPackages(packagesRes.packages);
       setSubscriptionPlans(plansRes.plans);
 
-      // Only load subscription status if authenticated
       if (isAuthenticated) {
         try {
           const subscriptionRes = await apiClient.getSubscriptionStatus();
@@ -52,26 +236,16 @@ export function CreditsPage() {
   };
 
   const handleSubscribe = async (planId: string) => {
-    console.log('handleSubscribe called with planId:', planId);
-    console.log('isAuthenticated:', isAuthenticated);
-    console.log('billingInterval:', billingInterval);
-
     if (!isAuthenticated) {
-      console.log('User not authenticated, showing login modal');
       setShowLoginModal(true);
       return;
     }
     setPurchasingId(planId);
     try {
-      console.log('Calling createSubscriptionCheckout...');
       const response = await apiClient.createSubscriptionCheckout(planId, billingInterval);
-      console.log('Checkout response:', response);
       const { checkoutUrl } = response;
-      console.log('Opening checkout URL:', checkoutUrl);
       if (checkoutUrl) {
         chrome.tabs.create({ url: checkoutUrl });
-      } else {
-        console.error('No checkoutUrl in response');
       }
       setTimeout(() => {
         refreshUser();
@@ -106,20 +280,23 @@ export function CreditsPage() {
     try {
       await apiClient.cancelSubscription(true);
       await loadData();
+      showToast('Subscription cancelled. You\'ll keep access until the billing period ends.', 'info');
     } catch (error) {
       console.error('Failed to cancel:', error);
+      showToast('Failed to cancel subscription', 'error');
     }
     setPurchasingId(null);
   };
 
-  const handleChangePlan = async (planId: string) => {
-    setPurchasingId(planId);
-    setChangePlanConfirm(null);
+  const handleChangePlan = async () => {
+    if (!changePlanTarget) return;
+    setPurchasingId(changePlanTarget.id);
     try {
-      await apiClient.changeSubscriptionPlan(planId, billingInterval);
+      await apiClient.changeSubscriptionPlan(changePlanTarget.id, billingInterval);
       await refreshUser();
       await loadData();
-      showToast('Plan changed successfully!', 'success');
+      setChangePlanTarget(null);
+      showToast('Plan changed successfully! 🎉', 'success');
     } catch (error) {
       console.error('Failed to change plan:', error);
       showToast('Failed to change plan: ' + (error as Error).message, 'error');
@@ -127,16 +304,13 @@ export function CreditsPage() {
     setPurchasingId(null);
   };
 
-  // Check if the selected plan+interval is different from current subscription
   const canChangeToPlan = (planId: string) => {
     if (!subscription || subscription.status !== 'ACTIVE') return false;
-    // Different plan or different interval (convert to match case)
     return subscription.plan.id !== planId || subscription.interval !== billingInterval.toUpperCase();
   };
 
-  // Determine if this is an upgrade or switch
-  const getChangeType = (targetPlan: SubscriptionPlan) => {
-    if (!subscription) return 'subscribe';
+  const getChangeType = (targetPlan: SubscriptionPlan): 'upgrade' | 'downgrade' | 'switch' => {
+    if (!subscription) return 'upgrade';
     const currentPlan = subscription.plan;
     const currentPrice = subscription.interval === 'MONTHLY'
       ? currentPlan.monthlyPriceInCents
@@ -150,7 +324,6 @@ export function CreditsPage() {
     return 'switch';
   };
 
-  // Calculate price per video
   const getPricePerVideo = (plan: SubscriptionPlan, isYearly: boolean) => {
     const totalPrice = isYearly ? plan.yearlyPriceInCents : plan.monthlyPriceInCents * 12;
     const totalVideos = isYearly
@@ -159,7 +332,6 @@ export function CreditsPage() {
     return (totalPrice / 100 / totalVideos).toFixed(2);
   };
 
-  // Calculate yearly savings
   const getYearlySavings = (plan: SubscriptionPlan) => {
     const monthlyTotal = plan.monthlyPriceInCents * 12;
     const yearlyTotal = plan.yearlyPriceInCents;
@@ -182,6 +354,8 @@ export function CreditsPage() {
   const isCurrentPlan = (planId: string) =>
     subscription?.plan.id === planId && subscription?.status === 'ACTIVE';
 
+  const hasActiveSubscription = subscription?.status === 'ACTIVE';
+
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-gradient-to-b from-slate-50 to-white">
       {/* Toast Notification */}
@@ -192,11 +366,38 @@ export function CreditsPage() {
           onClose={hideToast}
         />
       )}
+
       <div className="p-4 space-y-4">
+        {/* Current Plan Banner (when subscribed) */}
+        {hasActiveSubscription && subscription && (
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-4 text-white shadow-lg shadow-green-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium opacity-80">Your Current Plan</p>
+                <p className="text-lg font-bold">{subscription.plan.name}</p>
+                <p className="text-sm opacity-90">
+                  {subscription.creditsRemaining} videos remaining • {subscription.interval === 'MONTHLY' ? 'Monthly' : 'Yearly'} billing
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-xl font-bold text-slate-800">Choose Your Plan</h1>
-          <p className="text-sm text-slate-500 mb-3">Cancel anytime.</p>
+          <h1 className="text-xl font-bold text-slate-800">
+            {hasActiveSubscription ? 'Change Your Plan' : 'Choose Your Plan'}
+          </h1>
+          <p className="text-sm text-slate-500 mb-3">
+            {hasActiveSubscription ? 'Upgrade or switch plans anytime.' : 'Cancel anytime.'}
+          </p>
 
           {/* Billing Toggle */}
           <div className="inline-flex items-center bg-slate-100 rounded-full p-1 shadow-inner">
@@ -237,24 +438,41 @@ export function CreditsPage() {
               ? plan.yearlyCredits + plan.yearlyBonusCredits
               : plan.monthlyCredits;
             const isCurrent = isCurrentPlan(plan.id);
+            const isCurrentWithSameInterval = isCurrent && subscription?.interval === billingInterval.toUpperCase();
             const isPopular = plan.badgeText === 'Most Popular';
             const pricePerVideo = getPricePerVideo(plan, isYearly);
             const savings = getYearlySavings(plan);
+            const changeType = hasActiveSubscription ? getChangeType(plan) : null;
+            const canChange = canChangeToPlan(plan.id);
 
             return (
               <div
                 key={plan.id}
                 className={`relative rounded-2xl p-5 transition-all duration-200 ${
-                  isCurrent
+                  isCurrentWithSameInterval
                     ? 'bg-green-50 border-2 border-green-500 shadow-lg shadow-green-500/10'
                     : isPopular
                       ? 'bg-gradient-to-br from-primary-50 via-white to-accent-50 border-2 border-primary-400 shadow-xl shadow-primary-500/20 hover:shadow-2xl hover:scale-[1.02]'
                       : 'bg-white border-2 border-slate-200 hover:border-slate-300 hover:shadow-lg'
                 }`}
               >
-                {isPopular && !isCurrent && (
+                {/* Badge */}
+                {isPopular && !isCurrentWithSameInterval && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
                     ✨ RECOMMENDED
+                  </span>
+                )}
+
+                {/* Upgrade/Downgrade indicator for subscribed users */}
+                {hasActiveSubscription && canChange && changeType && (
+                  <span className={`absolute -top-3 right-4 text-xs font-bold px-3 py-1 rounded-full shadow ${
+                    changeType === 'upgrade'
+                      ? 'bg-green-500 text-white'
+                      : changeType === 'downgrade'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-blue-500 text-white'
+                  }`}>
+                    {changeType === 'upgrade' ? '⬆️ UPGRADE' : changeType === 'downgrade' ? '⬇️ DOWNGRADE' : '🔄 SWITCH'}
                   </span>
                 )}
 
@@ -284,7 +502,8 @@ export function CreditsPage() {
                   )}
                 </div>
 
-                {isCurrent && subscription?.interval === billingInterval.toUpperCase() ? (
+                {/* Action Button */}
+                {isCurrentWithSameInterval ? (
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-sm text-green-600 font-semibold flex items-center gap-1.5">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -297,22 +516,23 @@ export function CreditsPage() {
                       disabled={purchasingId === 'cancel'}
                       className="text-xs text-slate-400 hover:text-red-500 transition-colors"
                     >
-                      {purchasingId === 'cancel' ? 'Canceling...' : 'Cancel'}
+                      {purchasingId === 'cancel' ? 'Canceling...' : 'Cancel subscription'}
                     </button>
                   </div>
-                ) : canChangeToPlan(plan.id) ? (
-                  <Button
-                    onClick={() => setChangePlanConfirm({ planId: plan.id, planName: plan.name })}
-                    variant={isPopular ? 'primary' : 'outline'}
-                    className={`w-full mt-4 ${
-                      isPopular
-                        ? 'bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 shadow-lg shadow-primary-500/30 text-white font-semibold'
-                        : ''
+                ) : canChange ? (
+                  <button
+                    onClick={() => setChangePlanTarget(plan)}
+                    disabled={purchasingId === plan.id}
+                    className={`w-full mt-4 py-3 px-4 rounded-xl font-semibold transition-all ${
+                      changeType === 'upgrade'
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/30'
+                        : changeType === 'downgrade'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/30'
+                          : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-lg shadow-blue-500/30'
                     }`}
-                    isLoading={purchasingId === plan.id}
                   >
-                    {getChangeType(plan) === 'upgrade' ? '⬆️ Upgrade' : getChangeType(plan) === 'downgrade' ? '⬇️ Downgrade' : '🔄 Switch'}
-                  </Button>
+                    {changeType === 'upgrade' ? '⬆️ Upgrade to ' + plan.name : changeType === 'downgrade' ? '⬇️ Switch to ' + plan.name : '🔄 Switch billing'}
+                  </button>
                 ) : (
                   <Button
                     onClick={() => handleSubscribe(plan.id)}
@@ -348,7 +568,7 @@ export function CreditsPage() {
             <p className="text-xs text-slate-400 text-center mb-3">One-time purchase, no subscription</p>
             {packages.map((pkg, index) => {
               const pricePerVideo = (pkg.priceInCents / 100 / pkg.credits).toFixed(2);
-              const isBestValue = index === packages.length - 1; // Last package is usually best value
+              const isBestValue = index === packages.length - 1;
 
               return (
                 <div
@@ -399,53 +619,18 @@ export function CreditsPage() {
         </button>
       </div>
 
-      {/* Change Plan Confirmation Modal */}
-      {changePlanConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-800 mb-2">
-              {(() => {
-                const plan = subscriptionPlans.find(p => p.id === changePlanConfirm.planId);
-                if (!plan) return 'Change Plan';
-                const changeType = getChangeType(plan);
-                if (changeType === 'upgrade') return '⬆️ Upgrade Plan';
-                if (changeType === 'downgrade') return '⬇️ Downgrade Plan';
-                return '🔄 Switch Plan';
-              })()}
-            </h3>
-            <p className="text-sm text-slate-600 mb-4">
-              {(() => {
-                const plan = subscriptionPlans.find(p => p.id === changePlanConfirm.planId);
-                if (!plan) return '';
-                const changeType = getChangeType(plan);
-                if (changeType === 'upgrade') {
-                  return `You'll be charged a prorated amount for the upgrade to ${changePlanConfirm.planName} (${billingInterval}).`;
-                }
-                if (changeType === 'downgrade') {
-                  return `You'll receive a prorated credit when switching to ${changePlanConfirm.planName} (${billingInterval}).`;
-                }
-                return `Switch to ${changePlanConfirm.planName} with ${billingInterval} billing.`;
-              })()}
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setChangePlanConfirm(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1"
-                onClick={() => handleChangePlan(changePlanConfirm.planId)}
-                isLoading={purchasingId === changePlanConfirm.planId}
-              >
-                Confirm
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Plan Change Modal */}
+      {changePlanTarget && subscription && (
+        <PlanChangeModal
+          currentPlan={subscription.plan}
+          currentInterval={subscription.interval}
+          targetPlan={changePlanTarget}
+          targetInterval={billingInterval}
+          changeType={getChangeType(changePlanTarget)}
+          isLoading={purchasingId === changePlanTarget.id}
+          onConfirm={handleChangePlan}
+          onCancel={() => setChangePlanTarget(null)}
+        />
       )}
 
       {/* Login Modal */}
