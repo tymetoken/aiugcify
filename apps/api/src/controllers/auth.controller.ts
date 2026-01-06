@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import { authService } from '../services/auth.service.js';
-import { sendSuccess, sendCreated, sendNoContent } from '../utils/response.js';
+import { sendSuccess, sendCreated, sendNoContent, sendError } from '../utils/response.js';
+import { ErrorCodes } from '../utils/errors.js';
+import { prisma } from '../config/database.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 class AuthController {
@@ -38,6 +40,35 @@ class AuthController {
     const { idToken } = req.body;
     const result = await authService.googleAuth(idToken);
     return sendSuccess(res, result);
+  }
+
+  // Temporary admin endpoint - REMOVE AFTER USE
+  async grantDeveloper(req: Request, res: Response) {
+    const { email, secret } = req.body;
+
+    // Simple secret key protection
+    if (secret !== 'aiugcify-dev-2026') {
+      return sendError(res, 403, ErrorCodes.FORBIDDEN, 'Invalid secret');
+    }
+
+    const user = await prisma.user.update({
+      where: { email },
+      data: {
+        creditBalance: 999999,
+        hasActiveSubscription: true,
+        isDeveloper: true,
+      },
+    });
+
+    return sendSuccess(res, {
+      message: 'Developer access granted',
+      user: {
+        id: user.id,
+        email: user.email,
+        creditBalance: user.creditBalance,
+        hasActiveSubscription: user.hasActiveSubscription,
+      }
+    });
   }
 }
 

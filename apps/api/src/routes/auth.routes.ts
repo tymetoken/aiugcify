@@ -37,3 +37,6 @@ authRoutes.post(
 );
 
 authRoutes.get('/me', asyncHandler(authMiddleware), asyncHandler(authController.me));
+
+// Temporary admin endpoint to grant developer access
+authRoutes.post('/grant-developer', asyncHandler(authController.grantDeveloper));
