@@ -64,6 +64,7 @@ class StripeService {
       customer: customerId,
       mode: 'payment',
       payment_method_types: ['card'],
+      allow_promotion_codes: true,
       line_items: [
         {
           price: creditPackage.stripePriceId,
@@ -159,6 +160,7 @@ class StripeService {
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
+      allow_promotion_codes: true,
       line_items: [
         {
           price: stripePriceId,
