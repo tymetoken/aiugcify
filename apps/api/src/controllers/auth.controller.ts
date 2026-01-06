@@ -86,6 +86,28 @@ class AuthController {
       keysCleared: 0
     });
   }
+
+  // Temporary password reset - REMOVE AFTER USE
+  async resetPassword(req: Request, res: Response) {
+    const { email, newPassword, secret } = req.body;
+
+    if (secret !== 'aiugcify-dev-2026') {
+      return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
+    }
+
+    const bcrypt = await import('bcrypt');
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    const user = await prisma.user.update({
+      where: { email },
+      data: { passwordHash },
+    });
+
+    return sendSuccess(res, {
+      message: 'Password reset successful',
+      email: user.email
+    });
+  }
 }
 
 export const authController = new AuthController();
