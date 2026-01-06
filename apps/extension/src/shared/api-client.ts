@@ -154,12 +154,14 @@ class ApiClient {
   }
 
   async createCheckout(packageId: string): Promise<{ sessionId: string; checkoutUrl: string }> {
+    // Use API hosted pages for Stripe redirects (chrome-extension:// URLs don't work)
+    const baseUrl = API_BASE_URL.replace('/api/v1', '');
     return this.request<{ sessionId: string; checkoutUrl: string }>('/credits/checkout', {
       method: 'POST',
       body: JSON.stringify({
         packageId,
-        successUrl: chrome.runtime.getURL('popup.html?checkout=success'),
-        cancelUrl: chrome.runtime.getURL('popup.html?checkout=cancelled'),
+        successUrl: `${baseUrl}/checkout/success`,
+        cancelUrl: `${baseUrl}/checkout/cancelled`,
       }),
     });
   }
@@ -196,13 +198,15 @@ class ApiClient {
     planId: string,
     interval: 'monthly' | 'yearly'
   ): Promise<{ sessionId: string; checkoutUrl: string }> {
+    // Use API hosted pages for Stripe redirects (chrome-extension:// URLs don't work)
+    const baseUrl = API_BASE_URL.replace('/api/v1', '');
     return this.request<{ sessionId: string; checkoutUrl: string }>('/credits/subscription/checkout', {
       method: 'POST',
       body: JSON.stringify({
         planId,
         interval,
-        successUrl: chrome.runtime.getURL('popup.html?subscription=success'),
-        cancelUrl: chrome.runtime.getURL('popup.html?subscription=cancelled'),
+        successUrl: `${baseUrl}/checkout/success`,
+        cancelUrl: `${baseUrl}/checkout/cancelled`,
       }),
     });
   }

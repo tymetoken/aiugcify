@@ -19,6 +19,64 @@ export function createApp() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Payment success/cancel pages for Stripe redirects
+  app.get('/checkout/success', (_req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Successful - AI UGCify</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+            .container { background: white; padding: 48px; border-radius: 16px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 400px; }
+            .icon { font-size: 64px; margin-bottom: 16px; }
+            h1 { color: #1a1a2e; margin: 0 0 12px; font-size: 24px; }
+            p { color: #666; margin: 0 0 24px; line-height: 1.6; }
+            .btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600; }
+            .btn:hover { opacity: 0.9; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">✅</div>
+            <h1>Payment Successful!</h1>
+            <p>Your subscription is now active. Credits have been added to your account.</p>
+            <button class="btn" onclick="window.close()">Close this tab</button>
+            <p style="margin-top: 16px; font-size: 14px; color: #999;">You can now return to the extension.</p>
+          </div>
+        </body>
+      </html>
+    `);
+  });
+
+  app.get('/checkout/cancelled', (_req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Cancelled - AI UGCify</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+            .container { background: white; padding: 48px; border-radius: 16px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 400px; }
+            .icon { font-size: 64px; margin-bottom: 16px; }
+            h1 { color: #1a1a2e; margin: 0 0 12px; font-size: 24px; }
+            p { color: #666; margin: 0 0 24px; line-height: 1.6; }
+            .btn { background: #667eea; color: white; border: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600; }
+            .btn:hover { opacity: 0.9; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">❌</div>
+            <h1>Payment Cancelled</h1>
+            <p>Your payment was cancelled. No charges were made.</p>
+            <button class="btn" onclick="window.close()">Close this tab</button>
+          </div>
+        </body>
+      </html>
+    `);
+  });
+
   // Security headers with strict CSP
   app.use(
     helmet({
