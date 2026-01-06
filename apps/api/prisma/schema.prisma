@@ -10,19 +10,21 @@ datasource db {
 // ============ USER & AUTH ============
 
 model User {
-  id               String    @id @default(cuid())
-  email            String    @unique
-  passwordHash     String
-  name             String?
-  creditBalance    Int       @default(0)
-  stripeCustomerId String?   @unique
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  lastLoginAt      DateTime?
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  passwordHash          String
+  name                  String?
+  creditBalance         Int       @default(0)
+  stripeCustomerId      String?   @unique
+  hasActiveSubscription Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  lastLoginAt           DateTime?
 
   creditTransactions CreditTransaction[]
   videos             Video[]
   refreshTokens      RefreshToken[]
+  subscription       Subscription?
 
   @@index([email])
   @@index([stripeCustomerId])
@@ -49,6 +51,20 @@ enum TransactionType {
   REFUND
   BONUS
   ADJUSTMENT
+  SUBSCRIPTION_CREDIT
+  SUBSCRIPTION_BONUS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PAUSED
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+  YEARLY
 }
 
 enum TransactionStatus {
@@ -96,6 +112,69 @@ model CreditPackage {
   updatedAt     DateTime @updatedAt
 
   @@index([isActive])
+}
+
+model SubscriptionPlan {
+  id                   String   @id @default(cuid())
+  name                 String
+  description          String?
+
+  // Monthly pricing
+  monthlyPriceInCents  Int
+  monthlyStripePriceId String   @unique
+  monthlyCredits       Int
+
+  // Yearly pricing (with discount)
+  yearlyPriceInCents   Int
+  yearlyStripePriceId  String   @unique
+  yearlyCredits        Int
+  yearlyBonusCredits   Int      @default(0)
+
+  // Features and display
+  features             String[] @default([])
+  isActive             Boolean  @default(true)
+  displayOrder         Int      @default(0)
+  badgeText            String?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  subscriptions        Subscription[]
+
+  @@index([isActive])
+}
+
+model Subscription {
+  id                    String               @id @default(cuid())
+  userId                String               @unique
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Stripe subscription data
+  stripeSubscriptionId  String               @unique
+  stripePriceId         String
+
+  // Subscription details
+  planId                String
+  plan                  SubscriptionPlan     @relation(fields: [planId], references: [id])
+  status                SubscriptionStatus   @default(ACTIVE)
+  interval              SubscriptionInterval
+
+  // Billing cycle
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelAtPeriodEnd     Boolean              @default(false)
+  canceledAt            DateTime?
+
+  // Credits tracking
+  creditsPerPeriod      Int
+  creditsUsedThisPeriod Int                  @default(0)
+  lastCreditReset       DateTime             @default(now())
+
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  @@index([stripeSubscriptionId])
+  @@index([status])
 }
 
 // ============ VIDEO GENERATION ============

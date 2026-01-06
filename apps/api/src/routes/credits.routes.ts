@@ -6,6 +6,7 @@ import { asyncHandler } from '../middleware/error.middleware.js';
 
 export const creditsRoutes = Router();
 
+// One-time package routes
 creditsRoutes.get('/packages', asyncHandler(creditsController.getPackages));
 
 creditsRoutes.get(
@@ -26,4 +27,35 @@ creditsRoutes.get(
   asyncHandler(authMiddleware),
   validate(schemas.pagination, 'query'),
   asyncHandler(creditsController.getHistory)
+);
+
+// Subscription routes
+creditsRoutes.get(
+  '/subscription/plans',
+  asyncHandler(creditsController.getSubscriptionPlans)
+);
+
+creditsRoutes.get(
+  '/subscription/status',
+  asyncHandler(authMiddleware),
+  asyncHandler(creditsController.getSubscriptionStatus)
+);
+
+creditsRoutes.post(
+  '/subscription/checkout',
+  asyncHandler(authMiddleware),
+  validate(schemas.subscriptionCheckout),
+  asyncHandler(creditsController.createSubscriptionCheckout)
+);
+
+creditsRoutes.post(
+  '/subscription/cancel',
+  asyncHandler(authMiddleware),
+  asyncHandler(creditsController.cancelSubscription)
+);
+
+creditsRoutes.post(
+  '/subscription/resume',
+  asyncHandler(authMiddleware),
+  asyncHandler(creditsController.resumeSubscription)
 );

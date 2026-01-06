@@ -1,7 +1,8 @@
 import type { Request, Response } from 'express';
 import { creditsService } from '../services/credits.service.js';
 import { stripeService } from '../services/stripe.service.js';
-import { sendSuccess } from '../utils/response.js';
+import { subscriptionService } from '../services/subscription.service.js';
+import { sendSuccess, sendNoContent } from '../utils/response.js';
 import { paginate } from '../utils/response.js';
 import { config } from '../config/index.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
@@ -41,6 +42,48 @@ class CreditsController {
     const result = paginate(transactions, total, page, limit);
 
     return sendSuccess(res, { transactions: result.items }, 200, result.meta);
+  }
+
+  // Subscription methods
+  async getSubscriptionPlans(_req: Request, res: Response) {
+    const plans = await subscriptionService.getPlans();
+    return sendSuccess(res, { plans });
+  }
+
+  async getSubscriptionStatus(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+    const subscription = await subscriptionService.getSubscriptionStatus(user.id);
+    return sendSuccess(res, { subscription });
+  }
+
+  async createSubscriptionCheckout(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+    const { planId, interval, successUrl, cancelUrl } = req.body;
+
+    const result = await stripeService.createSubscriptionCheckout({
+      userId: user.id,
+      planId,
+      interval,
+      successUrl: successUrl || `${config.FRONTEND_URL}/credits/success`,
+      cancelUrl: cancelUrl || `${config.FRONTEND_URL}/credits`,
+    });
+
+    return sendSuccess(res, result);
+  }
+
+  async cancelSubscription(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+    const { cancelAtPeriodEnd = true } = req.body;
+
+    await stripeService.cancelSubscription(user.id, cancelAtPeriodEnd);
+    return sendNoContent(res);
+  }
+
+  async resumeSubscription(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+
+    await stripeService.resumeSubscription(user.id);
+    return sendNoContent(res);
   }
 }
 

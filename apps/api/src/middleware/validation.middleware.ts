@@ -96,6 +96,13 @@ export const schemas = {
     cancelUrl: z.string().url().optional(),
   }),
 
+  subscriptionCheckout: z.object({
+    planId: z.string().min(1),
+    interval: z.enum(['monthly', 'yearly']),
+    successUrl: z.string().url().optional(),
+    cancelUrl: z.string().url().optional(),
+  }),
+
   // Pagination schemas
   pagination: z.object({
     page: z.coerce.number().int().positive().default(1),

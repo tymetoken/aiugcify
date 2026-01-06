@@ -13,6 +13,8 @@ export interface UserPublic {
   email: string;
   name: string | null;
   creditBalance: number;
+  hasActiveSubscription: boolean;
+  subscription?: UserSubscription;
 }
 
 // Auth Types
@@ -167,7 +169,15 @@ export interface UpdateScriptRequest {
 }
 
 // Credit Types
-export type TransactionType = 'PURCHASE' | 'CONSUMPTION' | 'REFUND' | 'BONUS' | 'ADJUSTMENT';
+export type TransactionType =
+  | 'PURCHASE'
+  | 'CONSUMPTION'
+  | 'REFUND'
+  | 'BONUS'
+  | 'ADJUSTMENT'
+  | 'SUBSCRIPTION_CREDIT'
+  | 'SUBSCRIPTION_BONUS';
+
 export type TransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
 
 export interface CreditPackage {
@@ -196,6 +206,48 @@ export interface CheckoutRequest {
 }
 
 export interface CheckoutResponse {
+  sessionId: string;
+  checkoutUrl: string;
+}
+
+// Subscription Types
+export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'PAUSED';
+export type SubscriptionInterval = 'MONTHLY' | 'YEARLY';
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  monthlyPriceInCents: number;
+  monthlyCredits: number;
+  yearlyPriceInCents: number;
+  yearlyCredits: number;
+  yearlyBonusCredits: number;
+  features: string[];
+  badgeText: string | null;
+}
+
+export interface UserSubscription {
+  id: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  interval: SubscriptionInterval;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+  creditsPerPeriod: number;
+  creditsUsedThisPeriod: number;
+  creditsRemaining: number;
+}
+
+export interface SubscriptionCheckoutRequest {
+  planId: string;
+  interval: 'monthly' | 'yearly';
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
+export interface SubscriptionCheckoutResponse {
   sessionId: string;
   checkoutUrl: string;
 }

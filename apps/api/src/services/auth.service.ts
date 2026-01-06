@@ -215,12 +215,14 @@ class AuthService {
     email: string;
     name: string | null;
     creditBalance: number;
+    hasActiveSubscription?: boolean;
   }): UserPublic {
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       creditBalance: user.creditBalance,
+      hasActiveSubscription: user.hasActiveSubscription ?? false,
     };
   }
 }

@@ -6,6 +6,8 @@ import type {
   UserPublic,
   CreditPackage,
   CreditTransaction,
+  SubscriptionPlan,
+  UserSubscription,
   Video,
   VideoListItem,
   GenerateScriptResponse,
@@ -172,6 +174,41 @@ class ApiClient {
       transactions: data.data.transactions,
       meta: data.meta,
     };
+  }
+
+  // Subscription endpoints
+  async getSubscriptionPlans(): Promise<{ plans: SubscriptionPlan[] }> {
+    return this.request<{ plans: SubscriptionPlan[] }>('/credits/subscription/plans');
+  }
+
+  async getSubscriptionStatus(): Promise<{ subscription: UserSubscription | null }> {
+    return this.request<{ subscription: UserSubscription | null }>('/credits/subscription/status');
+  }
+
+  async createSubscriptionCheckout(
+    planId: string,
+    interval: 'monthly' | 'yearly'
+  ): Promise<{ sessionId: string; checkoutUrl: string }> {
+    return this.request<{ sessionId: string; checkoutUrl: string }>('/credits/subscription/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        planId,
+        interval,
+        successUrl: chrome.runtime.getURL('popup.html?subscription=success'),
+        cancelUrl: chrome.runtime.getURL('popup.html?subscription=cancelled'),
+      }),
+    });
+  }
+
+  async cancelSubscription(cancelAtPeriodEnd = true): Promise<void> {
+    await this.request('/credits/subscription/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ cancelAtPeriodEnd }),
+    });
+  }
+
+  async resumeSubscription(): Promise<void> {
+    await this.request('/credits/subscription/resume', { method: 'POST' });
   }
 
   // Videos endpoints
