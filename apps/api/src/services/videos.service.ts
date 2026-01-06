@@ -37,13 +37,25 @@ class VideosService {
   ): Promise<GenerateScriptResult> {
     const { productData, videoStyle, options } = input;
 
+    // Backend validation: Strip additionalNotes for free users
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { hasActiveSubscription: true },
+    });
+
+    const sanitizedOptions = { ...options };
+    if (!user?.hasActiveSubscription && sanitizedOptions?.additionalNotes) {
+      logger.info({ userId }, 'Stripping additionalNotes for free user');
+      delete sanitizedOptions.additionalNotes;
+    }
+
     // Step 1: Analyze product with Product Breakdown GPT
     logger.info({ productTitle: productData.title, userId }, 'Starting product analysis');
     const analyzedProduct = await openaiService.analyzeProduct(productData);
 
     // Step 2: Generate script using the analyzed product data
     logger.info({ productName: analyzedProduct.productName, userId }, 'Generating script from analyzed product');
-    const scriptResult = await openaiService.generateScript(productData, videoStyle, options, analyzedProduct);
+    const scriptResult = await openaiService.generateScript(productData, videoStyle, sanitizedOptions, analyzedProduct);
 
     // Create video record with analyzed product data
     const video = await prisma.video.create({

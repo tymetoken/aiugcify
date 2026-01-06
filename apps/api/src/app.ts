@@ -19,11 +19,6 @@ export function createApp() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Debug endpoint to verify deployment
-  app.get('/debug-version', (_req, res) => {
-    res.json({ version: '2026-01-06-v6-asyncfix', deployed: new Date().toISOString() });
-  });
-
   // Security headers with strict CSP
   app.use(
     helmet({
