@@ -14,6 +14,9 @@ import { webhooksRoutes } from './routes/webhooks.routes.js';
 export function createApp() {
   const app = express();
 
+  // Trust proxy - required for Railway/Heroku/etc behind load balancers
+  app.set('trust proxy', 1);
+
   // Health check - MUST be first to allow Railway health checks (before CORS/auth)
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
