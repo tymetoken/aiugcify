@@ -19,12 +19,13 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   } else {
     logger.error(
       {
-        error: err,
+        errorName: err.name,
+        errorMessage: err.message,
         stack: err.stack,
         path: req.path,
         method: req.method,
       },
-      'Unexpected error'
+      `Unexpected error: ${err.message}`
     );
   }
 
