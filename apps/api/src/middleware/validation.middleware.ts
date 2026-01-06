@@ -96,15 +96,15 @@ export const schemas = {
   // Credits schemas
   checkout: z.object({
     packageId: z.string().min(1),
-    successUrl: z.string().url().optional(),
-    cancelUrl: z.string().url().optional(),
+    successUrl: z.string().min(1).optional(),
+    cancelUrl: z.string().min(1).optional(),
   }),
 
   subscriptionCheckout: z.object({
     planId: z.string().min(1),
     interval: z.enum(['monthly', 'yearly']),
-    successUrl: z.string().url().optional(),
-    cancelUrl: z.string().url().optional(),
+    successUrl: z.string().min(1).optional(),
+    cancelUrl: z.string().min(1).optional(),
   }),
 
   // Pagination schemas
