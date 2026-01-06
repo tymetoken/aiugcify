@@ -5,14 +5,16 @@ import { useVideoStore } from '../store/videoStore';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/Button';
 import { UpgradeModal } from '../components/UpgradeModal';
+import { LoginModal } from '../components/LoginModal';
 
 export function DashboardPage() {
   const { isOnProductPage, scrapedProduct, scrapeCurrentPage, isLoading } = useProductStore();
   const { setPage } = useUIStore();
   const { setAdditionalNotes } = useVideoStore();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const previousProductUrl = useRef<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const hasCredits = (user?.creditBalance ?? 0) > 0;
 
@@ -26,6 +28,12 @@ export function DashboardPage() {
   }, [scrapedProduct?.url, setAdditionalNotes]);
 
   const handleStartGeneration = async () => {
+    // Check if user is authenticated first
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+
     // Check if user has credits
     if (!hasCredits) {
       setShowUpgradeModal(true);
@@ -35,6 +43,16 @@ export function DashboardPage() {
     // Clear notes when starting fresh generation
     setAdditionalNotes('');
 
+    if (!scrapedProduct) {
+      await scrapeCurrentPage();
+    }
+    setPage('product');
+  };
+
+  const handleLoginSuccess = async () => {
+    setShowLoginModal(false);
+    // After login, continue with generation flow
+    // The user state will be updated, so we check credits again
     if (!scrapedProduct) {
       await scrapeCurrentPage();
     }
@@ -170,8 +188,8 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* No Credits Warning */}
-      {!hasCredits && (
+      {/* No Credits Warning - only show for authenticated users */}
+      {isAuthenticated && !hasCredits && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 animate-fade-in">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -196,13 +214,18 @@ export function DashboardPage() {
       {/* Action Button */}
       <Button
         onClick={handleStartGeneration}
-        className={`w-full ${!hasCredits ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' : ''}`}
+        className={`w-full ${isAuthenticated && !hasCredits ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' : ''}`}
         size="lg"
         disabled={!isOnProductPage}
         isLoading={isLoading}
       >
         <span className="flex items-center gap-2">
-          {hasCredits ? (
+          {!isAuthenticated ? (
+            <>
+              <SparkleIcon className="w-5 h-5" />
+              {scrapedProduct ? 'Generate UGC Video' : 'Scrape & Generate'}
+            </>
+          ) : hasCredits ? (
             <>
               <SparkleIcon className="w-5 h-5" />
               {scrapedProduct ? 'Generate UGC Video' : 'Scrape & Generate'}
@@ -240,6 +263,13 @@ export function DashboardPage() {
           <p className="text-xs text-dark-400 mt-0.5">Get more videos</p>
         </button>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={handleLoginSuccess}
+      />
 
       {/* Upgrade Modal */}
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
