@@ -15,6 +15,7 @@ export function CreditsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [showOneTime, setShowOneTime] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('yearly');
 
   useEffect(() => {
     loadData();
@@ -45,7 +46,7 @@ export function CreditsPage() {
   const handleSubscribe = async (planId: string) => {
     setPurchasingId(planId);
     try {
-      const { checkoutUrl } = await apiClient.createSubscriptionCheckout(planId, 'yearly');
+      const { checkoutUrl } = await apiClient.createSubscriptionCheckout(planId, billingInterval);
       window.open(checkoutUrl, '_blank');
       setTimeout(() => {
         refreshUser();
@@ -114,14 +115,44 @@ export function CreditsPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-xl font-bold text-slate-800">Choose Your Plan</h1>
-          <p className="text-sm text-slate-500">Billed yearly. Cancel anytime.</p>
+          <p className="text-sm text-slate-500 mb-3">Cancel anytime.</p>
+
+          {/* Billing Toggle */}
+          <div className="inline-flex items-center bg-slate-100 rounded-full p-1">
+            <button
+              onClick={() => setBillingInterval('monthly')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                billingInterval === 'monthly'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingInterval('yearly')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                billingInterval === 'yearly'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Yearly
+              <span className="ml-1 text-xs text-green-600 font-bold">-17%</span>
+            </button>
+          </div>
         </div>
 
         {/* Subscription Plans */}
         <div className="space-y-3">
           {subscriptionPlans.map((plan) => {
-            const monthlyPrice = Math.round(plan.yearlyPriceInCents / 100 / 12);
-            const totalVideos = plan.yearlyCredits + plan.yearlyBonusCredits;
+            const isYearly = billingInterval === 'yearly';
+            const price = isYearly
+              ? Math.round(plan.yearlyPriceInCents / 100 / 12)
+              : Math.round(plan.monthlyPriceInCents / 100);
+            const totalVideos = isYearly
+              ? plan.yearlyCredits + plan.yearlyBonusCredits
+              : plan.monthlyCredits;
             const isCurrent = isCurrentPlan(plan.id);
             const isPopular = plan.badgeText === 'Most Popular';
 
@@ -145,10 +176,14 @@ export function CreditsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-slate-800">{plan.name}</h3>
-                    <p className="text-sm text-slate-500">{totalVideos} videos/year</p>
+                    <p className="text-sm text-slate-500">
+                      {totalVideos} videos/{isYearly ? 'year' : 'month'}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-slate-800">${monthlyPrice}<span className="text-sm font-normal text-slate-400">/mo</span></p>
+                    <p className="text-2xl font-bold text-slate-800">
+                      ${price}<span className="text-sm font-normal text-slate-400">/mo</span>
+                    </p>
                   </div>
                 </div>
 
