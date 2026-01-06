@@ -54,7 +54,8 @@
       "Bash(timeout 60 powershell:*)",
       "Bash(timeout:*)",
       "Bash(npx tsx scripts/create-stripe-subscriptions.ts)",
-      "Bash(del \"C:\\Users\\mfsef\\Desktop\\claude_code\\aiugcify\\apps\\api\\scripts\\create-stripe-subscriptions.ts\")"
+      "Bash(del \"C:\\Users\\mfsef\\Desktop\\claude_code\\aiugcify\\apps\\api\\scripts\\create-stripe-subscriptions.ts\")",
+      "Bash(railway --version:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
