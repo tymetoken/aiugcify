@@ -49,20 +49,34 @@ export function CreditsPage() {
   };
 
   const handleSubscribe = async (planId: string) => {
+    console.log('handleSubscribe called with planId:', planId);
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('billingInterval:', billingInterval);
+
     if (!isAuthenticated) {
+      console.log('User not authenticated, showing login modal');
       setShowLoginModal(true);
       return;
     }
     setPurchasingId(planId);
     try {
-      const { checkoutUrl } = await apiClient.createSubscriptionCheckout(planId, billingInterval);
-      window.open(checkoutUrl, '_blank');
+      console.log('Calling createSubscriptionCheckout...');
+      const response = await apiClient.createSubscriptionCheckout(planId, billingInterval);
+      console.log('Checkout response:', response);
+      const { checkoutUrl } = response;
+      console.log('Opening checkout URL:', checkoutUrl);
+      if (checkoutUrl) {
+        chrome.tabs.create({ url: checkoutUrl });
+      } else {
+        console.error('No checkoutUrl in response');
+      }
       setTimeout(() => {
         refreshUser();
         loadData();
       }, 5000);
     } catch (error) {
       console.error('Failed to create checkout:', error);
+      alert('Failed to create checkout: ' + (error as Error).message);
     }
     setPurchasingId(null);
   };

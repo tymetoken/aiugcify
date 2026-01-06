@@ -46,6 +46,18 @@ class StripeService {
 
     // Get or create Stripe customer
     let customerId = user.stripeCustomerId;
+
+    // Verify customer exists in current Stripe mode, create new if not
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch (err: unknown) {
+        // Customer doesn't exist in current mode (live/test mismatch), create new
+        logger.info({ userId, oldCustomerId: customerId }, 'Stripe customer not found in current mode, creating new');
+        customerId = null;
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -131,6 +143,18 @@ class StripeService {
 
     // Get or create Stripe customer
     let customerId = user.stripeCustomerId;
+
+    // Verify customer exists in current Stripe mode, create new if not
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch (err: unknown) {
+        // Customer doesn't exist in current mode (live/test mismatch), create new
+        logger.info({ userId, oldCustomerId: customerId }, 'Stripe customer not found in current mode, creating new');
+        customerId = null;
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
