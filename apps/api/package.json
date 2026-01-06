@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && tsc",
-    "start": "prisma db push --skip-generate && node dist/index.js & node dist/workers/index.js",
+    "start": "prisma db push --skip-generate && tsx prisma/seed.ts && node dist/index.js & node dist/workers/index.js",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
