@@ -48,6 +48,11 @@ authRoutes.get('/test', (_req, res) => {
   res.json({ success: true, message: 'Auth routes working', timestamp: new Date().toISOString() });
 });
 
+// POST test without any middleware
+authRoutes.post('/post-test', (req, res) => {
+  res.json({ success: true, body: req.body, timestamp: new Date().toISOString() });
+});
+
 // DB diagnostic endpoint
 authRoutes.get('/db-test', async (_req, res) => {
   try {
