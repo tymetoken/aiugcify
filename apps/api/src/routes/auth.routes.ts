@@ -42,3 +42,8 @@ authRoutes.get('/me', asyncHandler(authMiddleware), asyncHandler(authController.
 // Temporary admin endpoints - REMOVE AFTER USE
 authRoutes.post('/grant-developer', asyncHandler(authController.grantDeveloper));
 authRoutes.post('/reset-rate-limit', asyncHandler(authController.resetRateLimit));
+
+// Simple test endpoint to diagnose issues
+authRoutes.get('/test', (_req, res) => {
+  res.json({ success: true, message: 'Auth routes working', timestamp: new Date().toISOString() });
+});
