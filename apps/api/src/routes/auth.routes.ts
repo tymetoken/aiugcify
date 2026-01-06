@@ -47,3 +47,19 @@ authRoutes.post('/reset-rate-limit', asyncHandler(authController.resetRateLimit)
 authRoutes.get('/test', (_req, res) => {
   res.json({ success: true, message: 'Auth routes working', timestamp: new Date().toISOString() });
 });
+
+// DB diagnostic endpoint
+authRoutes.get('/db-test', async (_req, res) => {
+  try {
+    const { prisma } = await import('../config/database.js');
+    // Just count users to test DB connection
+    const count = await prisma.user.count();
+    res.json({ success: true, userCount: count, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      stack: (error as Error).stack?.split('\n').slice(0, 5)
+    });
+  }
+});
