@@ -86,3 +86,70 @@ authRoutes.get('/find-user-test', async (_req, res) => {
     });
   }
 });
+
+// Detailed registration test endpoint
+authRoutes.post('/register-test', async (req, res): Promise<void> => {
+  const steps: string[] = [];
+  try {
+    const { email, password, name } = req.body;
+    steps.push('1. Got request body');
+
+    const { prisma } = await import('../config/database.js');
+    steps.push('2. Imported prisma');
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email?.toLowerCase() }
+    });
+    steps.push(`3. Checked existing user: ${!!existingUser}`);
+
+    if (existingUser) {
+      res.json({ success: false, steps, error: 'User already exists' });
+      return;
+    }
+
+    const bcrypt = await import('bcrypt');
+    steps.push('4. Imported bcrypt');
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    steps.push('5. Hashed password');
+
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        passwordHash,
+        name,
+        creditBalance: 5,
+      },
+    });
+    steps.push(`6. Created user: ${user.id}`);
+
+    const { generateTokens, getRefreshTokenExpiry } = await import('../utils/jwt.js');
+    steps.push('7. Imported JWT utils');
+
+    const tokens = generateTokens({ userId: user.id, email: user.email });
+    steps.push('8. Generated tokens');
+
+    await prisma.refreshToken.create({
+      data: {
+        token: tokens.refreshToken,
+        userId: user.id,
+        expiresAt: getRefreshTokenExpiry(),
+      },
+    });
+    steps.push('9. Stored refresh token');
+
+    res.json({
+      success: true,
+      steps,
+      user: { id: user.id, email: user.email },
+      hasTokens: !!tokens.accessToken
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      steps,
+      error: (error as Error).message,
+      stack: (error as Error).stack?.split('\n').slice(0, 8)
+    });
+  }
+});
