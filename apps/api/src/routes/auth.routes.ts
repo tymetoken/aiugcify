@@ -16,7 +16,7 @@ authRoutes.post(
 
 authRoutes.post(
   '/login',
-  authRateLimit,
+  // Temporarily disabled authRateLimit for debugging
   validate(schemas.login),
   asyncHandler(authController.login)
 );

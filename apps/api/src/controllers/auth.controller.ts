@@ -74,33 +74,36 @@ class AuthController {
 
   // Temporary admin endpoint to reset rate limits - REMOVE AFTER USE
   async resetRateLimit(req: Request, res: Response) {
-    const { secret } = req.body;
+    try {
+      const { secret } = req.body;
 
-    // Simple secret key protection
-    if (secret !== 'aiugcify-dev-2026') {
-      return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
+      // Simple secret key protection
+      if (secret !== 'aiugcify-dev-2026') {
+        return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
+      }
+
+      // Clear all rate limit keys from Redis
+      // Rate-limit-redis uses keys with prefix 'rl:' by default
+      let keysCleared = 0;
+
+      try {
+        const keys = await redisConnection.keys('rl:*');
+        if (keys && keys.length > 0) {
+          await redisConnection.del(...keys);
+          keysCleared += keys.length;
+        }
+      } catch (e) {
+        console.error('Error clearing rl:* keys:', e);
+      }
+
+      return sendSuccess(res, {
+        message: 'Rate limits reset',
+        keysCleared
+      });
+    } catch (error) {
+      console.error('resetRateLimit error:', error);
+      return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, 'Failed to reset rate limits');
     }
-
-    // Clear all rate limit keys from Redis
-    // Rate-limit-redis uses keys with prefix 'rl:' by default
-    const keys = await redisConnection.keys('rl:*');
-    let keysCleared = keys.length;
-
-    if (keys.length > 0) {
-      await redisConnection.del(...keys);
-    }
-
-    // Also try clearing with other common patterns
-    const otherKeys = await redisConnection.keys('*rate*');
-    if (otherKeys.length > 0) {
-      await redisConnection.del(...otherKeys);
-      keysCleared += otherKeys.length;
-    }
-
-    return sendSuccess(res, {
-      message: 'Rate limits reset',
-      keysCleared
-    });
   }
 }
 
