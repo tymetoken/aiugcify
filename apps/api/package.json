@@ -6,7 +6,7 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc",
+    "build": "rimraf node_modules/.prisma && prisma generate && tsc",
     "start": "prisma db push --skip-generate && tsx prisma/seed.ts && node dist/index.js & node dist/workers/index.js",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
