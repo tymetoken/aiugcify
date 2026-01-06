@@ -16,29 +16,36 @@ const GENERATION_STEPS = [
   { id: 3, label: 'Finalizing', description: 'Preparing your script for review' },
 ];
 
-const VIDEO_STYLES: { value: VideoStyle; label: string; description: string }[] = [
+const VIDEO_STYLES: { value: VideoStyle; label: string; description: string; icon: string; badge?: string }[] = [
   {
     value: 'PRODUCT_SHOWCASE',
     label: 'Product Showcase',
-    description: 'Clean product shots with text overlays',
+    description: 'Cinematic product shots with text overlays',
+    icon: '🎬',
+    badge: 'Popular',
   },
   {
     value: 'TALKING_HEAD',
     label: 'Talking Head',
-    description: 'AI presenter talking about the product',
+    description: 'AI presenter reviews your product',
+    icon: '🗣️',
   },
   {
     value: 'LIFESTYLE',
     label: 'Lifestyle',
-    description: 'Product in real-life usage scenarios',
+    description: 'Product in real-world scenarios',
+    icon: '✨',
   },
 ];
 
 export function ProductPage() {
   const { scrapedProduct } = useProductStore();
   const { selectedStyle, setSelectedStyle, generateScript, isLoading, additionalNotes, setAdditionalNotes } = useVideoStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { setPage } = useUIStore();
+
+  // Check if user has an active subscription (paid user)
+  const hasSubscription = user?.hasActiveSubscription ?? false;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -146,33 +153,33 @@ export function ProductPage() {
 
       {/* Video Style Selection */}
       <div>
-        <h4 className="text-sm font-medium text-slate-700 mb-3">Choose Video Style</h4>
-        <div className="space-y-2">
+        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Video Style</h4>
+        <div className="grid grid-cols-3 gap-2">
           {VIDEO_STYLES.map((style) => (
             <button
               key={style.value}
               onClick={() => setSelectedStyle(style.value)}
-              className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+              className={`relative p-3 rounded-xl text-center transition-all duration-200 ${
                 selectedStyle === style.value
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-slate-200 hover:border-slate-300'
+                  ? 'bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-lg shadow-primary-500/30 scale-[1.02]'
+                  : 'bg-white border border-slate-200 hover:border-primary-300 hover:shadow-md'
               }`}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p
-                    className={`font-medium ${
-                      selectedStyle === style.value ? 'text-primary-700' : 'text-slate-800'
-                    }`}
-                  >
-                    {style.label}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">{style.description}</p>
-                </div>
-                {selectedStyle === style.value && (
-                  <CheckCircleIcon className="w-5 h-5 text-primary-500" />
-                )}
-              </div>
+              {style.badge && (
+                <span className={`absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  selectedStyle === style.value
+                    ? 'bg-white text-primary-600'
+                    : 'bg-amber-400 text-amber-900'
+                }`}>
+                  {style.badge}
+                </span>
+              )}
+              <div className="text-2xl mb-1">{style.icon}</div>
+              <p className={`text-xs font-semibold ${
+                selectedStyle === style.value ? 'text-white' : 'text-slate-700'
+              }`}>
+                {style.label}
+              </p>
             </button>
           ))}
         </div>
@@ -181,27 +188,43 @@ export function ProductPage() {
       {/* Additional Notes */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium text-slate-700">Additional Notes</h4>
-          <span className={`text-xs ${additionalNotes.length > MAX_NOTES_LENGTH * 0.9 ? 'text-amber-500' : 'text-slate-400'}`}>
-            {additionalNotes.length}/{MAX_NOTES_LENGTH}
-          </span>
+          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Script Direction</h4>
+          {hasSubscription && (
+            <span className={`text-xs ${additionalNotes.length > MAX_NOTES_LENGTH * 0.9 ? 'text-amber-500' : 'text-slate-400'}`}>
+              {additionalNotes.length}/{MAX_NOTES_LENGTH}
+            </span>
+          )}
         </div>
-        <div className="relative">
-          <textarea
-            value={additionalNotes}
-            onChange={(e) => setAdditionalNotes(e.target.value.slice(0, MAX_NOTES_LENGTH))}
-            placeholder="Add any specific instructions, features to highlight, or creative direction for your video..."
-            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-            rows={3}
-            spellCheck={false}
-          />
-          <div className="absolute bottom-2 right-2">
-            <NoteIcon className="w-4 h-4 text-slate-300" />
+        {hasSubscription ? (
+          <div className="relative">
+            <textarea
+              value={additionalNotes}
+              onChange={(e) => setAdditionalNotes(e.target.value.slice(0, MAX_NOTES_LENGTH))}
+              placeholder="Add specific instructions, features to highlight, or creative direction..."
+              className="w-full p-3 bg-white border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+              rows={2}
+              spellCheck={false}
+            />
           </div>
-        </div>
-        <p className="text-xs text-slate-400 mt-1.5">
-          Optional: Guide the AI with specific requests for your video script
-        </p>
+        ) : (
+          <button
+            onClick={() => setPage('credits')}
+            className="w-full p-3 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-dashed border-amber-300 rounded-xl hover:border-amber-400 hover:from-amber-100 hover:to-orange-100 transition-all group"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-lg">✨</span>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-amber-700 group-hover:text-amber-800">
+                  Unlock Script Customization
+                </p>
+                <p className="text-xs text-amber-600/80">
+                  Guide AI with your creative direction
+                </p>
+              </div>
+              <ChevronRightIcon className="w-4 h-4 text-amber-500 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </button>
+        )}
       </div>
 
       {/* Credit Tooltip for first-time users */}
@@ -305,14 +328,6 @@ export function ProductPage() {
   );
 }
 
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-    </svg>
-  );
-}
-
 function SparklesIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -331,14 +346,10 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-function NoteIcon({ className }: { className?: string }) {
+function ChevronRightIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-      <polyline points="10 9 9 9 8 9" />
+      <path d="M9 18l6-6-6-6" />
     </svg>
   );
 }

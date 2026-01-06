@@ -30,9 +30,6 @@ export function CreditTooltip({ className = '' }: CreditTooltipProps) {
 
   return (
     <div className={`relative ${className}`}>
-      {/* Tooltip arrow */}
-      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-accent-500" />
-
       {/* Tooltip content */}
       <div className="bg-gradient-to-r from-primary-700 to-accent-600 rounded-xl p-4 shadow-lg animate-fade-in-up">
         <div className="flex items-start gap-3">
@@ -56,6 +53,9 @@ export function CreditTooltip({ className = '' }: CreditTooltipProps) {
           Got it
         </button>
       </div>
+
+      {/* Tooltip arrow pointing down */}
+      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-accent-600" />
     </div>
   );
 }

@@ -16,7 +16,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { useUIStore } from './store/uiStore';
 
 export default function App() {
-  const { isAuthenticated, initialize, isLoading: authLoading, isFirstLogin } = useAuthStore();
+  const { isAuthenticated, initialize, isLoading: authLoading, isFirstLogin, refreshUser } = useAuthStore();
   const { checkCurrentTab, setScrapedProduct, _hasHydrated: productHydrated } = useProductStore();
   const { currentPage, setPage, _hasHydrated: uiHydrated } = useUIStore();
   const { resumePollingIfNeeded, _hasHydrated: videoHydrated } = useVideoStore();
@@ -24,6 +24,13 @@ export default function App() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Refresh user data (including credits) when popup opens and user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      refreshUser();
+    }
+  }, [isAuthenticated, authLoading, refreshUser]);
 
   // Check current tab for all users (authenticated or not)
   useEffect(() => {
@@ -84,7 +91,7 @@ export default function App() {
   }
 
   // Pages that require authentication - redirect to login
-  const authRequiredPages = ['script-editor', 'generating', 'video-ready', 'credits', 'history'];
+  const authRequiredPages = ['script-editor', 'generating', 'video-ready'];
   if (!isAuthenticated && authRequiredPages.includes(currentPage)) {
     setPage('dashboard');
   }
@@ -109,7 +116,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-[480px] bg-slate-50 flex flex-col">
+    <div className="min-h-[480px] bg-slate-50 flex flex-col relative">
       <Header />
       <main className="flex-1 overflow-y-auto">{renderPage()}</main>
     </div>

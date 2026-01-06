@@ -3,11 +3,13 @@ import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 import { apiClient } from '@/shared/api-client';
 import { Button } from '../components/Button';
+import { LoginModal } from '../components/LoginModal';
 import type { CreditPackage, SubscriptionPlan, UserSubscription } from '@aiugcify/shared-types';
 
 export function CreditsPage() {
-  const { user, refreshUser } = useAuthStore();
+  const { user, refreshUser, isAuthenticated } = useAuthStore();
   const { setPage } = useUIStore();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
@@ -31,11 +33,14 @@ export function CreditsPage() {
       setPackages(packagesRes.packages);
       setSubscriptionPlans(plansRes.plans);
 
-      try {
-        const subscriptionRes = await apiClient.getSubscriptionStatus();
-        setSubscription(subscriptionRes.subscription);
-      } catch {
-        setSubscription(null);
+      // Only load subscription status if authenticated
+      if (isAuthenticated) {
+        try {
+          const subscriptionRes = await apiClient.getSubscriptionStatus();
+          setSubscription(subscriptionRes.subscription);
+        } catch {
+          setSubscription(null);
+        }
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -44,6 +49,10 @@ export function CreditsPage() {
   };
 
   const handleSubscribe = async (planId: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     setPurchasingId(planId);
     try {
       const { checkoutUrl } = await apiClient.createSubscriptionCheckout(planId, billingInterval);
@@ -59,6 +68,10 @@ export function CreditsPage() {
   };
 
   const handlePurchase = async (packageId: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     setPurchasingId(packageId);
     try {
       const { checkoutUrl } = await apiClient.createCheckout(packageId);
@@ -118,15 +131,14 @@ export function CreditsPage() {
     <div className="flex flex-col h-full overflow-y-auto bg-gradient-to-b from-slate-50 to-white">
       <div className="p-4 space-y-4">
         {/* Balance */}
-        <div className="flex items-center justify-between">
-          <button onClick={() => setPage('dashboard')} className="text-slate-400 hover:text-slate-600 transition-colors">
-            ← Back
-          </button>
-          <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-slate-100">
-            <span className="text-sm text-slate-500">Credits:</span>
-            <span className="font-bold text-slate-800">{user?.creditBalance || 0}</span>
+        {isAuthenticated && (
+          <div className="flex justify-end">
+            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm border border-slate-100">
+              <span className="text-sm text-slate-500">Credits:</span>
+              <span className="font-bold text-slate-800">{user?.creditBalance || 0}</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Header */}
         <div className="text-center">
@@ -311,7 +323,25 @@ export function CreditsPage() {
             })}
           </div>
         )}
+
+        {/* Back Button */}
+        <button
+          onClick={() => setPage('dashboard')}
+          className="w-full py-3 text-slate-400 hover:text-slate-600 transition-colors text-sm font-medium"
+        >
+          ← Back to Dashboard
+        </button>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => {
+          setShowLoginModal(false);
+          loadData();
+        }}
+      />
     </div>
   );
 }

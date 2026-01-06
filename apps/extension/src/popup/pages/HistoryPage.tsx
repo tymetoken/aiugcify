@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { useUIStore } from '../store/uiStore';
+import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/Button';
+import { LoginModal } from '../components/LoginModal';
 import type { VideoStatus, VideoListItem } from '@aiugcify/shared-types';
 
 const STATUS_CONFIG: Record<VideoStatus, { label: string; bgColor: string; textColor: string; dotColor: string }> = {
@@ -19,11 +21,15 @@ const STATUS_CONFIG: Record<VideoStatus, { label: string; bgColor: string; textC
 export function HistoryPage() {
   const { videos, loadVideos, loadVideo, retryVideo, isLoading } = useVideoStore();
   const { setPage } = useUIStore();
+  const { isAuthenticated } = useAuthStore();
   const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
-    loadVideos();
-  }, [loadVideos]);
+    if (isAuthenticated) {
+      loadVideos();
+    }
+  }, [loadVideos, isAuthenticated]);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -73,6 +79,51 @@ export function HistoryPage() {
     }
     setLoadingVideoId(null);
   };
+
+  // Show login prompt for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="p-4 space-y-4 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-dark-800 text-lg">Video History</h3>
+            <p className="text-xs text-dark-400 mt-0.5">Sign in to view your videos</p>
+          </div>
+        </div>
+
+        {/* Login Prompt */}
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-accent-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+            <VideoIcon className="w-10 h-10 text-primary-500" />
+          </div>
+          <h4 className="font-semibold text-dark-800 text-lg">Sign in to view your videos</h4>
+          <p className="text-sm text-dark-400 mt-1 max-w-xs mx-auto">
+            Your generated videos will appear here after you sign in
+          </p>
+          <Button onClick={() => setShowLoginModal(true)} className="mt-6">
+            Sign In
+          </Button>
+        </div>
+
+        {/* Back Button */}
+        <Button onClick={() => setPage('dashboard')} variant="ghost" className="w-full">
+          <ArrowLeftIcon className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
+
+        {/* Login Modal */}
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onSuccess={() => {
+            setShowLoginModal(false);
+            loadVideos();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4 animate-fade-in">
