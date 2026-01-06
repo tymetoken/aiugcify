@@ -63,3 +63,26 @@ authRoutes.get('/db-test', async (_req, res) => {
     });
   }
 });
+
+// Find user diagnostic endpoint
+authRoutes.get('/find-user-test', async (_req, res) => {
+  try {
+    const { prisma } = await import('../config/database.js');
+    const user = await prisma.user.findUnique({
+      where: { email: 'test@test.com' }
+    });
+    res.json({
+      success: true,
+      found: !!user,
+      userId: user?.id,
+      hasPassword: !!user?.passwordHash,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+      stack: (error as Error).stack?.split('\n').slice(0, 5)
+    });
+  }
+});
