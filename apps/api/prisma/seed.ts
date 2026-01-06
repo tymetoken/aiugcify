@@ -5,13 +5,13 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding credit packages...');
 
-  // One-time credit packages with updated pricing and bonus credits
+  // One-time credit packages - Sora 2 Standard quality ($0.125/video API cost)
   const packages = [
     {
       id: 'starter',
       name: 'Starter',
       credits: 5,
-      priceInCents: 1500, // $15
+      priceInCents: 1500, // $15.00 ($3.00/video)
       stripePriceId: process.env.STRIPE_PRICE_STARTER || 'price_starter_placeholder',
       displayOrder: 1,
       bonusCredits: 0,
@@ -21,30 +21,30 @@ async function main() {
       id: 'creator',
       name: 'Creator',
       credits: 25,
-      priceInCents: 4900, // $49
+      priceInCents: 5900, // $59.00 ($2.36/video)
       stripePriceId: process.env.STRIPE_PRICE_CREATOR || 'price_creator_placeholder',
       displayOrder: 2,
-      bonusCredits: 5, // +5 bonus = 30 total
+      bonusCredits: 0,
       badgeText: 'Most Popular',
     },
     {
       id: 'pro',
       name: 'Pro',
       credits: 100,
-      priceInCents: 14900, // $149
+      priceInCents: 19900, // $199.00 ($1.99/video)
       stripePriceId: process.env.STRIPE_PRICE_PRO || 'price_pro_placeholder',
       displayOrder: 3,
-      bonusCredits: 25, // +25 bonus = 125 total
+      bonusCredits: 0,
       badgeText: 'Best Value',
     },
     {
       id: 'agency',
       name: 'Agency',
       credits: 500,
-      priceInCents: 59900, // $599
+      priceInCents: 74900, // $749.00 ($1.50/video)
       stripePriceId: process.env.STRIPE_PRICE_AGENCY || 'price_agency_placeholder',
       displayOrder: 4,
-      bonusCredits: 100, // +100 bonus = 600 total
+      bonusCredits: 0,
       badgeText: null,
     },
   ];
