@@ -3,7 +3,6 @@ import { authService } from '../services/auth.service.js';
 import { sendSuccess, sendCreated, sendNoContent, sendError } from '../utils/response.js';
 import { ErrorCodes } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
-import { redisConnection } from '../config/redis.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 class AuthController {
@@ -74,36 +73,18 @@ class AuthController {
 
   // Temporary admin endpoint to reset rate limits - REMOVE AFTER USE
   async resetRateLimit(req: Request, res: Response) {
-    try {
-      const { secret } = req.body;
+    const { secret } = req.body;
 
-      // Simple secret key protection
-      if (secret !== 'aiugcify-dev-2026') {
-        return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
-      }
-
-      // Clear all rate limit keys from Redis
-      // Rate-limit-redis uses keys with prefix 'rl:' by default
-      let keysCleared = 0;
-
-      try {
-        const keys = await redisConnection.keys('rl:*');
-        if (keys && keys.length > 0) {
-          await redisConnection.del(...keys);
-          keysCleared += keys.length;
-        }
-      } catch (e) {
-        console.error('Error clearing rl:* keys:', e);
-      }
-
-      return sendSuccess(res, {
-        message: 'Rate limits reset',
-        keysCleared
-      });
-    } catch (error) {
-      console.error('resetRateLimit error:', error);
-      return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, 'Failed to reset rate limits');
+    // Simple secret key protection
+    if (secret !== 'aiugcify-dev-2026') {
+      return sendError(res, 403, ErrorCodes.UNAUTHORIZED, 'Invalid secret');
     }
+
+    // Rate limits disabled on login endpoint, so just return success
+    return sendSuccess(res, {
+      message: 'Rate limits disabled on login - you should be able to log in now',
+      keysCleared: 0
+    });
   }
 }
 
