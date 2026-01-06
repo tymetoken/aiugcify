@@ -68,10 +68,10 @@ async function main() {
       name: 'Basic',
       description: 'Perfect for getting started with UGC videos',
       monthlyPriceInCents: 1900, // $19/month
-      monthlyStripePriceId: 'price_1SmffCCrXz9HvykqJribYNjf',
+      monthlyStripePriceId: 'price_1SmgtiCrXz9HvykqDLyRhECZ',
       monthlyCredits: 10,
       yearlyPriceInCents: 19200, // $192/year (save ~16%)
-      yearlyStripePriceId: 'price_1SmffiCrXz9HvykqoIMVaprd',
+      yearlyStripePriceId: 'price_1Smgv2CrXz9HvykqOTqaC9OJ',
       yearlyCredits: 120, // 10 credits/month * 12
       yearlyBonusCredits: 20, // +20 bonus credits for yearly
       features: ['10 videos per month', 'HD quality exports', 'Email support'],
@@ -83,10 +83,10 @@ async function main() {
       name: 'Standard',
       description: 'Best for growing creators and small businesses',
       monthlyPriceInCents: 4900, // $49/month
-      monthlyStripePriceId: 'price_1SmfgCCrXz9HvykqwpvT2wGC',
+      monthlyStripePriceId: 'price_1SmgvOCrXz9HvykqRh5cJsc6',
       monthlyCredits: 30,
       yearlyPriceInCents: 49200, // $492/year (save ~16%)
-      yearlyStripePriceId: 'price_1SmfgfCrXz9HvykqiOFTWsyH',
+      yearlyStripePriceId: 'price_1SmgvfCrXz9Hvykq78VHPp5U',
       yearlyCredits: 360, // 30 credits/month * 12
       yearlyBonusCredits: 60, // +60 bonus credits for yearly
       features: ['30 videos per month', '4K quality exports', 'Priority support', 'Custom templates'],
@@ -98,10 +98,10 @@ async function main() {
       name: 'Premium',
       description: 'For power users, agencies, and enterprises',
       monthlyPriceInCents: 9900, // $99/month
-      monthlyStripePriceId: 'price_1SmfhJCrXz9HvykqpyHI6PXm',
+      monthlyStripePriceId: 'price_1Smgw5CrXz9HvykqgMiY56yL',
       monthlyCredits: 75,
       yearlyPriceInCents: 99600, // $996/year (save ~16%)
-      yearlyStripePriceId: 'price_1SmfhXCrXz9HvykqiT9jqDuC',
+      yearlyStripePriceId: 'price_1SmgwRCrXz9HvykqALibdeJe',
       yearlyCredits: 900, // 75 credits/month * 12
       yearlyBonusCredits: 150, // +150 bonus credits for yearly
       features: ['75 videos per month', '4K quality exports', 'Dedicated support', 'API access', 'White-label options'],
