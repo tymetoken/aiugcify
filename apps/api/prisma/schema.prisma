@@ -17,6 +17,7 @@ model User {
   creditBalance         Int       @default(0)
   stripeCustomerId      String?   @unique
   hasActiveSubscription Boolean   @default(false)
+  isDeveloper           Boolean   @default(false)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   lastLoginAt           DateTime?
