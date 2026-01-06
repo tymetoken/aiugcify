@@ -412,13 +412,15 @@ class StripeService {
         tx
       );
 
-      // Allocate initial credits
+      // Allocate initial credits - query by userId since we used upsert
       const subscription = await tx.subscription.findUnique({
-        where: { stripeSubscriptionId },
+        where: { userId },
       });
 
       if (subscription) {
         await subscriptionService.allocateMonthlyCredits(subscription.id, tx);
+      } else {
+        logger.error({ userId }, 'Subscription not found after creation');
       }
     });
 

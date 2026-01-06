@@ -230,9 +230,10 @@ class SubscriptionService {
       ? plan.monthlyCredits
       : plan.yearlyCredits;
 
-    // Create subscription record
-    await client.subscription.create({
-      data: {
+    // Use upsert to handle existing subscriptions (e.g., from previous attempts)
+    await client.subscription.upsert({
+      where: { userId },
+      create: {
         userId,
         stripeSubscriptionId,
         stripePriceId,
@@ -242,6 +243,20 @@ class SubscriptionService {
         currentPeriodStart,
         currentPeriodEnd,
         creditsPerPeriod,
+        creditsUsedThisPeriod: 0,
+      },
+      update: {
+        stripeSubscriptionId,
+        stripePriceId,
+        planId,
+        status: 'ACTIVE',
+        interval,
+        currentPeriodStart,
+        currentPeriodEnd,
+        creditsPerPeriod,
+        creditsUsedThisPeriod: 0,
+        cancelAtPeriodEnd: false,
+        canceledAt: null,
       },
     });
 
@@ -253,7 +268,7 @@ class SubscriptionService {
 
     logger.info(
       { userId, planId, interval, stripeSubscriptionId },
-      'Subscription created'
+      'Subscription created/updated'
     );
   }
 
