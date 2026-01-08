@@ -143,39 +143,54 @@ export const videoWorker = new Worker<VideoJobData>(
     } catch (error) {
       logger.error({ error, jobId: job.id, videoId }, 'Video generation failed');
 
-      // Get the video to check retry count
+      // Get the video to get userId for refund
       const video = await prisma.video.findUnique({
         where: { id: videoId },
-        select: { retryCount: true, userId: true },
+        select: { userId: true, creditsUsed: true },
       });
 
-      // Update video status to FAILED
+      // Format user-friendly error message
+      const rawError = (error as Error).message.toLowerCase();
+      let userFriendlyError = 'Video generation failed. Your credit has been refunded.';
+
+      if (rawError.includes('timed out') || rawError.includes('timeout')) {
+        userFriendlyError = 'Video generation timed out. Your credit has been refunded.';
+      } else if (rawError.includes('500') || rawError.includes('upstream') || rawError.includes('service')) {
+        userFriendlyError = 'Video service temporarily unavailable. Your credit has been refunded.';
+      } else if (rawError.includes('no video url') || rawError.includes('no results')) {
+        userFriendlyError = 'Video generation failed to complete. Your credit has been refunded.';
+      } else if (rawError.includes('failed')) {
+        userFriendlyError = 'Video generation failed. Your credit has been refunded.';
+      }
+
+      // Update video status to FAILED with user-friendly message
       await prisma.video.update({
         where: { id: videoId },
         data: {
           status: 'FAILED',
-          errorMessage: (error as Error).message,
-          errorCode: (error as { code?: string }).code || 'UNKNOWN_ERROR',
-          retryCount: { increment: 1 },
+          errorMessage: userFriendlyError,
+          errorCode: (error as { code?: string }).code || 'GENERATION_FAILED',
         },
       });
 
-      // If this was the final attempt (3 retries), refund the credit
-      if (video && video.retryCount >= 2) {
+      // Refund the credit immediately on failure
+      if (video && video.creditsUsed > 0) {
         try {
           await creditsService.refundCredits(
             video.userId,
             1,
             videoId,
-            'Video generation failed after max retries'
+            'Video generation failed - automatic refund'
           );
-          logger.info({ videoId }, 'Credit refunded after max retries');
+          logger.info({ videoId, userId: video.userId }, 'Credit refunded due to generation failure');
         } catch (refundError) {
           logger.error({ refundError, videoId }, 'Failed to refund credit');
         }
       }
 
-      throw error;
+      // Don't throw - we've handled the failure gracefully
+      // This prevents BullMQ from auto-retrying
+      return { success: false, videoId, error: userFriendlyError };
     }
   },
   {

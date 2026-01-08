@@ -8,6 +8,7 @@ import type {
   CreditTransaction,
   SubscriptionPlan,
   UserSubscription,
+  Invoice,
   Video,
   VideoListItem,
   GenerateScriptResponse,
@@ -51,6 +52,11 @@ class ApiClient {
       ...options,
       headers,
     });
+
+    // Handle 204 No Content responses
+    if (response.status === 204) {
+      return {} as T;
+    }
 
     const data = await response.json();
 
@@ -296,6 +302,21 @@ class ApiClient {
     return this.request<{ video: Video }>(`/videos/${videoId}/retry`, {
       method: 'POST',
     });
+  }
+
+  // Billing endpoints
+  async createBillingPortalSession(): Promise<{ url: string }> {
+    const baseUrl = API_BASE_URL.replace('/api/v1', '');
+    return this.request<{ url: string }>('/credits/billing/portal', {
+      method: 'POST',
+      body: JSON.stringify({
+        returnUrl: `${baseUrl}/checkout/success`,
+      }),
+    });
+  }
+
+  async getInvoices(limit = 10): Promise<{ invoices: Invoice[] }> {
+    return this.request<{ invoices: Invoice[] }>(`/credits/billing/invoices?limit=${limit}`);
   }
 }
 

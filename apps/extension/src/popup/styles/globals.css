@@ -6,10 +6,11 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  --gradient-primary: linear-gradient(135deg, #334e68 0%, #44a69c 100%);
-  --gradient-secondary: linear-gradient(135deg, #486581 0%, #5ec4b6 100%);
-  --gradient-dark: linear-gradient(135deg, #243b53 0%, #102a43 100%);
-  --gradient-subtle: linear-gradient(135deg, #f0f4f8 0%, #e6f6f4 100%);
+  --gradient-primary: linear-gradient(135deg, #475569 0%, #64748b 100%);
+  --gradient-secondary: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  --gradient-dark: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  --gradient-subtle: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --gradient-bg: linear-gradient(160deg, #fafafa 0%, #f4f4f5 50%, #fafafa 100%);
 }
 
 body {
@@ -18,7 +19,7 @@ body {
   min-height: 480px;
   max-height: 600px;
   overflow-y: auto;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--gradient-bg);
 }
 
 #root {
@@ -36,12 +37,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #bcccdc 0%, #9fb3c8 100%);
+  background: linear-gradient(180deg, #d4d4d8 0%, #a1a1aa 100%);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #9fb3c8 0%, #829ab1 100%);
+  background: linear-gradient(180deg, #a1a1aa 0%, #71717a 100%);
 }
 
 /* Utility classes */
@@ -88,7 +89,7 @@ body {
 
   .card-hover:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 40px rgba(68, 166, 156, 0.12);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
   }
 
   .btn-gradient {
@@ -152,7 +153,7 @@ body {
 
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid rgba(68, 166, 156, 0.5);
+  outline: 2px solid rgba(100, 116, 139, 0.4);
   outline-offset: 2px;
 }
 
@@ -163,8 +164,8 @@ body {
 
 /* Selection color */
 ::selection {
-  background: rgba(68, 166, 156, 0.2);
-  color: #243b53;
+  background: rgba(100, 116, 139, 0.15);
+  color: #27272a;
 }
 
 /* Input autofill styling */
@@ -189,9 +190,9 @@ input:-webkit-autofill:focus {
 /* Pulse glow effect */
 @keyframes pulseGlow {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(68, 166, 156, 0.25);
+    box-shadow: 0 0 10px rgba(100, 116, 139, 0.15);
   }
   50% {
-    box-shadow: 0 0 25px rgba(68, 166, 156, 0.4);
+    box-shadow: 0 0 20px rgba(100, 116, 139, 0.25);
   }
 }

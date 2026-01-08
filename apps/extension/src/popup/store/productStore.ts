@@ -39,7 +39,8 @@ export const useProductStore = create<ProductState>()(
           const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
           if (!tab?.url) {
-            set({ isOnProductPage: false, scrapedProduct: null });
+            set({ isOnProductPage: false });
+            // Don't clear scrapedProduct - preserve it for workflow
             return;
           }
 
@@ -56,9 +57,9 @@ export const useProductStore = create<ProductState>()(
               if (response?.success && response.data) {
                 set({ scrapedProduct: response.data });
               }
+              // Don't clear scrapedProduct on failure - preserve existing data
             } catch {
-              // Content script might not be loaded yet
-              set({ scrapedProduct: null });
+              // Content script might not be loaded yet - don't clear existing data
             }
           }
         } catch (error) {

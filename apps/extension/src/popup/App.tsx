@@ -19,7 +19,7 @@ export default function App() {
   const { isAuthenticated, initialize, isLoading: authLoading, isFirstLogin, refreshUser } = useAuthStore();
   const { checkCurrentTab, setScrapedProduct, _hasHydrated: productHydrated } = useProductStore();
   const { currentPage, setPage, _hasHydrated: uiHydrated } = useUIStore();
-  const { resumePollingIfNeeded, _hasHydrated: videoHydrated } = useVideoStore();
+  const { resumePollingIfNeeded, _hasHydrated: videoHydrated, isGeneratingScript } = useVideoStore();
 
   useEffect(() => {
     initialize();
@@ -32,10 +32,27 @@ export default function App() {
     }
   }, [isAuthenticated, authLoading, refreshUser]);
 
-  // Check current tab for all users (authenticated or not)
+  // Refresh user data when the popup becomes visible (user clicks on extension again)
   useEffect(() => {
-    checkCurrentTab();
-  }, [checkCurrentTab]);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isAuthenticated && !authLoading) {
+        refreshUser();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthenticated, authLoading, refreshUser]);
+
+  // Check current tab only when on dashboard (don't clear product data during workflow)
+  useEffect(() => {
+    // Only check tab when on dashboard - preserve product data during workflow
+    if (uiHydrated && currentPage === 'dashboard') {
+      checkCurrentTab();
+    }
+  }, [checkCurrentTab, currentPage, uiHydrated]);
 
   // Listen for product page navigation changes and reset to dashboard
   useEffect(() => {
@@ -62,6 +79,13 @@ export default function App() {
       resumePollingIfNeeded();
     }
   }, [videoHydrated, resumePollingIfNeeded]);
+
+  // Navigate to ProductPage if script generation is in progress (for popup reopen)
+  useEffect(() => {
+    if (videoHydrated && isGeneratingScript && currentPage !== 'product') {
+      setPage('product');
+    }
+  }, [videoHydrated, isGeneratingScript, currentPage, setPage]);
 
   // Wait for all stores to hydrate from Chrome storage
   const isHydrating = !uiHydrated || !videoHydrated || !productHydrated;

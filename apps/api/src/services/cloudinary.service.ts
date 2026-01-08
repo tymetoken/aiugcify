@@ -88,18 +88,21 @@ class CloudinaryService {
 
     // Use explicit transformation to transcode video to MP4/H264
     // This ensures GIF or other formats are converted to proper MP4
-    // Note: We use 'upload' type with signed URL for better transformation support
-    return cloudinary.url(publicId, {
+    // Note: fl_attachment flag uses filename without extension (Cloudinary adds it from format)
+    const url = cloudinary.url(publicId, {
       resource_type: 'video',
       type: 'upload',
       sign_url: true,
       expires_at: expirationTime,
+      format: 'mp4', // Force MP4 format in URL
       transformation: [
         { video_codec: 'h264' },
         { fetch_format: 'mp4' },
-        { flags: 'attachment:ugc-video.mp4' }, // Force download with MP4 filename
+        { flags: 'attachment:ugc_video' }, // Force download (filename without extension)
       ],
     });
+
+    return url;
   }
 
   // Generate a direct MP4 URL without authentication (for public access with expiry)

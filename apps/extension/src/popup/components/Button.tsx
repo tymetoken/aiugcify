@@ -24,13 +24,13 @@ export function Button({
 
   const variants = {
     primary:
-      'bg-gradient-to-r from-primary-600 to-accent-500 text-white shadow-lg shadow-accent-500/20 hover:shadow-xl hover:shadow-accent-500/25 hover:scale-[1.02] active:scale-[0.98] focus:ring-accent-500',
+      'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-soft-lg hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] focus:ring-primary-500',
     secondary:
-      'bg-dark-100 text-dark-700 hover:bg-dark-200 active:scale-[0.98] focus:ring-dark-400',
+      'bg-white/70 backdrop-blur-sm text-dark-700 border border-white/50 hover:bg-white/90 active:scale-[0.98] focus:ring-primary-300',
     outline:
-      'border-2 border-accent-400 text-primary-700 bg-white hover:bg-accent-50 active:scale-[0.98] focus:ring-accent-400',
+      'border-2 border-primary-300 text-primary-600 bg-white/50 backdrop-blur-sm hover:bg-primary-50/50 active:scale-[0.98] focus:ring-primary-400',
     ghost:
-      'text-dark-600 hover:bg-dark-100 active:scale-[0.98] focus:ring-dark-400',
+      'text-dark-600 hover:bg-white/50 active:scale-[0.98] focus:ring-primary-300',
     danger:
       'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/25 hover:scale-[1.02] active:scale-[0.98] focus:ring-red-500',
   };

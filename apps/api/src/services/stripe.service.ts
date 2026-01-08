@@ -71,7 +71,11 @@ class StripeService {
       });
     }
 
-    // Create checkout session
+    // Build description for one-time purchase
+    const purchaseDescription = `${creditPackage.name} - ${creditPackage.credits} video credits`;
+
+    // Create checkout session with invoice creation enabled
+    // This creates an invoice for one-time purchases so they appear in Stripe billing portal
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'payment',
@@ -83,11 +87,38 @@ class StripeService {
           quantity: 1,
         },
       ],
+      // Enable invoice creation for one-time purchases
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          description: purchaseDescription,
+          metadata: {
+            userId,
+            packageId,
+            packageName: creditPackage.name,
+            credits: creditPackage.credits.toString(),
+            bonusCredits: creditPackage.bonusCredits.toString(),
+          },
+        },
+      },
       metadata: {
         userId,
         packageId,
+        packageName: creditPackage.name,
         credits: creditPackage.credits.toString(),
         bonusCredits: creditPackage.bonusCredits.toString(),
+      },
+      // Pass metadata to the payment intent so it appears on charges and in Stripe dashboard
+      payment_intent_data: {
+        description: purchaseDescription,
+        statement_descriptor_suffix: creditPackage.name.substring(0, 22), // Max 22 chars for suffix
+        metadata: {
+          userId,
+          packageId,
+          packageName: creditPackage.name,
+          credits: creditPackage.credits.toString(),
+          bonusCredits: creditPackage.bonusCredits.toString(),
+        },
       },
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
@@ -179,6 +210,11 @@ class StripeService {
 
     const bonusCredits = interval === 'yearly' ? plan.yearlyBonusCredits : 0;
 
+    // Build subscription description
+    const intervalLabel = interval === 'monthly' ? 'Monthly' : 'Yearly';
+    const subscriptionDescription = `${plan.name} Plan (${intervalLabel}) - ${credits} video credits${bonusCredits > 0 ? ` + ${bonusCredits} bonus` : ''}`;
+    const statementDescriptor = `${plan.name} ${intervalLabel}`.substring(0, 22); // Max 22 chars
+
     // Create subscription checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -194,16 +230,22 @@ class StripeService {
       metadata: {
         userId,
         planId,
+        planName: plan.name,
         interval,
         credits: credits.toString(),
         bonusCredits: bonusCredits.toString(),
         type: 'subscription',
+        description: subscriptionDescription,
       },
       subscription_data: {
+        description: subscriptionDescription,
         metadata: {
           userId,
           planId,
+          planName: plan.name,
           interval,
+          credits: credits.toString(),
+          description: subscriptionDescription,
         },
       },
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
@@ -304,6 +346,7 @@ class StripeService {
     const subscriptionItemId = stripeSubscription.items.data[0].id;
 
     // Update subscription in Stripe
+    // Use 'always_invoice' to charge the prorated difference immediately on upgrade
     const updatedStripeSubscription = await stripe.subscriptions.update(
       subscription.stripeSubscriptionId,
       {
@@ -311,7 +354,8 @@ class StripeService {
           id: subscriptionItemId,
           price: newStripePriceId,
         }],
-        proration_behavior: 'create_prorations',
+        proration_behavior: 'always_invoice',
+        payment_behavior: 'error_if_incomplete',
         metadata: {
           userId,
           planId: newPlanId,
@@ -320,28 +364,74 @@ class StripeService {
       }
     );
 
-    // Calculate new credits per period
-    const creditsPerPeriod = newInterval === 'monthly'
+    // Calculate new credits per period (for subscription record)
+    const newCreditsPerPeriod = newInterval === 'monthly'
       ? newPlan.monthlyCredits
       : newPlan.yearlyCredits;
 
-    // Update local subscription record
-    await prisma.subscription.update({
-      where: { userId },
-      data: {
-        planId: newPlanId,
-        stripePriceId: newStripePriceId,
-        interval: newInterval.toUpperCase() as 'MONTHLY' | 'YEARLY',
-        creditsPerPeriod,
-        currentPeriodStart: new Date(updatedStripeSubscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(updatedStripeSubscription.current_period_end * 1000),
-        cancelAtPeriodEnd: false,
-        canceledAt: null,
-      },
+    // For upgrade credit calculation, always use MONTHLY credits
+    // This is because upgrades should grant the monthly difference, not the yearly total difference
+    // Example: Basic (10/mo) to Standard (30/mo) should give +20 credits, not +240 (yearly diff)
+    const newMonthlyCredits = newPlan.monthlyCredits;
+    const oldMonthlyCredits = subscription.plan.monthlyCredits;
+
+    // Calculate credit difference based on monthly values
+    const creditDifference = newMonthlyCredits - oldMonthlyCredits;
+
+    // Update local subscription record and user credits in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Update subscription
+      await tx.subscription.update({
+        where: { userId },
+        data: {
+          planId: newPlanId,
+          stripePriceId: newStripePriceId,
+          interval: newInterval.toUpperCase() as 'MONTHLY' | 'YEARLY',
+          creditsPerPeriod: newCreditsPerPeriod,
+          currentPeriodStart: new Date(updatedStripeSubscription.current_period_start * 1000),
+          currentPeriodEnd: new Date(updatedStripeSubscription.current_period_end * 1000),
+          cancelAtPeriodEnd: false,
+          canceledAt: null,
+        },
+      });
+
+      // If upgrading, add the credit difference to user's balance
+      if (creditDifference > 0) {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { creditBalance: true },
+        });
+
+        if (user) {
+          const newBalance = user.creditBalance + creditDifference;
+
+          await tx.user.update({
+            where: { id: userId },
+            data: { creditBalance: newBalance },
+          });
+
+          // Create transaction record for the upgrade credits
+          await tx.creditTransaction.create({
+            data: {
+              userId,
+              type: 'SUBSCRIPTION_CREDIT',
+              status: 'COMPLETED',
+              amount: creditDifference,
+              balanceAfter: newBalance,
+              description: `Plan upgrade: ${subscription.plan.name} → ${newPlan.name} (+${creditDifference} credits)`,
+            },
+          });
+
+          logger.info(
+            { userId, creditDifference, newBalance },
+            'Upgrade credits allocated'
+          );
+        }
+      }
     });
 
     logger.info(
-      { userId, oldPlanId: subscription.planId, newPlanId, newInterval },
+      { userId, oldPlanId: subscription.planId, newPlanId, newInterval, creditDifference },
       'Subscription plan changed'
     );
 
@@ -349,6 +439,31 @@ class StripeService {
       subscription: await subscriptionService.getSubscriptionStatus(userId),
       effectiveDate: new Date(),
     };
+  }
+
+  async completeCheckoutSession(sessionId: string) {
+    // Retrieve session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status !== 'paid') {
+      throw new AppError(400, ErrorCodes.BAD_REQUEST, 'Payment not completed');
+    }
+
+    // Check if already processed
+    const existingTransaction = await prisma.creditTransaction.findFirst({
+      where: { stripeSessionId: sessionId, status: 'COMPLETED' },
+    });
+
+    if (existingTransaction) {
+      // Already processed, return success
+      logger.info({ sessionId }, 'Checkout session already completed');
+      return { alreadyProcessed: true };
+    }
+
+    // Process the checkout completion
+    await this.handleCheckoutComplete(session);
+
+    return { success: true };
   }
 
   async handleWebhook(payload: Buffer, signature: string) {
@@ -484,9 +599,23 @@ class StripeService {
       'Processing subscription checkout completion'
     );
 
-    // Get subscription details from Stripe
+    // Get the plan to get the correct price ID based on metadata
+    const plan = await prisma.subscriptionPlan.findUnique({
+      where: { id: planId },
+    });
+
+    if (!plan) {
+      throw new Error(`Subscription plan not found: ${planId}`);
+    }
+
+    // Use the price ID from the plan based on the interval from metadata
+    // This ensures we use what was originally purchased, not what Stripe subscription currently has
+    const stripePriceId = interval === 'monthly'
+      ? plan.monthlyStripePriceId
+      : plan.yearlyStripePriceId;
+
+    // Get subscription period dates from Stripe
     const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-    const stripePriceId = stripeSubscription.items.data[0].price.id;
 
     // Create subscription record and allocate initial credits
     await prisma.$transaction(async (tx: PrismaTransactionClient) => {
@@ -628,6 +757,189 @@ class StripeService {
     logger.info({ chargeId: charge.id }, 'Processing refund');
     // TODO: Implement refund logic if needed
     // This would deduct credits if they were used after purchase
+  }
+
+  async createBillingPortalSession(userId: string, returnUrl: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw AppError.notFound('User not found');
+    }
+
+    if (!user.stripeCustomerId) {
+      throw new AppError(400, ErrorCodes.BAD_REQUEST, 'No billing history available');
+    }
+
+    // Verify customer exists in Stripe
+    try {
+      await stripe.customers.retrieve(user.stripeCustomerId);
+    } catch {
+      throw new AppError(400, ErrorCodes.BAD_REQUEST, 'No billing history available');
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: returnUrl,
+    });
+
+    logger.info({ userId }, 'Billing portal session created');
+
+    return { url: session.url };
+  }
+
+  async getInvoices(userId: string, limit: number = 10) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw AppError.notFound('User not found');
+    }
+
+    if (!user.stripeCustomerId) {
+      return { invoices: [] };
+    }
+
+    // Verify customer exists in Stripe
+    try {
+      await stripe.customers.retrieve(user.stripeCustomerId);
+    } catch {
+      return { invoices: [] };
+    }
+
+    // Fetch both invoices and charges
+    // Invoices: subscription payments + new one-time purchases (with invoice_creation enabled)
+    // Charges: legacy one-time purchases (before invoice_creation was enabled)
+    const [invoicesResult, chargesResult] = await Promise.all([
+      stripe.invoices.list({
+        customer: user.stripeCustomerId,
+        limit,
+      }),
+      stripe.charges.list({
+        customer: user.stripeCustomerId,
+        limit,
+      }),
+    ]);
+
+    // Map invoices (subscriptions + one-time purchases with invoices)
+    const invoiceItems = invoicesResult.data.map((invoice) => ({
+      id: invoice.id,
+      number: invoice.number,
+      status: invoice.status as string,
+      amountDue: invoice.amount_due,
+      amountPaid: invoice.amount_paid,
+      currency: invoice.currency,
+      created: new Date(invoice.created * 1000),
+      periodStart: invoice.period_start ? new Date(invoice.period_start * 1000) : null,
+      periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000) : null,
+      hostedInvoiceUrl: invoice.hosted_invoice_url,
+      invoicePdf: invoice.invoice_pdf,
+      description: invoice.description || this.getInvoiceDescription(invoice),
+      type: 'invoice' as const,
+    }));
+
+    // Track charge IDs and payment intent IDs that are already associated with invoices
+    const invoiceChargeIds = new Set(
+      invoicesResult.data
+        .map((inv) => {
+          if (typeof inv.charge === 'string') return inv.charge;
+          if (inv.charge && typeof inv.charge === 'object') return inv.charge.id;
+          return null;
+        })
+        .filter((id): id is string => id !== null)
+    );
+
+    const invoicePaymentIntentIds = new Set(
+      invoicesResult.data
+        .map((inv) => {
+          if (typeof inv.payment_intent === 'string') return inv.payment_intent;
+          if (inv.payment_intent && typeof inv.payment_intent === 'object') return inv.payment_intent.id;
+          return null;
+        })
+        .filter((id): id is string => id !== null)
+    );
+
+    // Map legacy charges (one-time purchases made before invoice_creation was enabled)
+    const chargeItems = chargesResult.data
+      .filter((charge) => {
+        // Exclude charges already associated with invoices
+        if (invoiceChargeIds.has(charge.id)) return false;
+        // Exclude charges whose payment intent is associated with an invoice
+        const paymentIntentId = typeof charge.payment_intent === 'string'
+          ? charge.payment_intent
+          : charge.payment_intent?.id;
+        if (paymentIntentId && invoicePaymentIntentIds.has(paymentIntentId)) return false;
+        // Only include successful charges
+        return charge.status === 'succeeded';
+      })
+      .map((charge) => ({
+        id: charge.id,
+        number: null,
+        status: charge.status === 'succeeded' ? 'paid' : charge.status,
+        amountDue: charge.amount,
+        amountPaid: charge.amount,
+        currency: charge.currency,
+        created: new Date(charge.created * 1000),
+        periodStart: null,
+        periodEnd: null,
+        hostedInvoiceUrl: charge.receipt_url,
+        invoicePdf: charge.receipt_url,
+        description: charge.description || this.getChargeDescription(charge),
+        type: 'charge' as const,
+      }));
+
+    // Combine and sort by date (newest first)
+    const allItems = [...invoiceItems, ...chargeItems]
+      .sort((a, b) => b.created.getTime() - a.created.getTime())
+      .slice(0, limit);
+
+    return { invoices: allItems };
+  }
+
+  private getInvoiceDescription(invoice: Stripe.Invoice): string {
+    // Try to get plan name from subscription metadata
+    if (invoice.subscription_details?.metadata?.planName) {
+      const planName = invoice.subscription_details.metadata.planName;
+      const interval = invoice.subscription_details.metadata.interval;
+      const credits = invoice.subscription_details.metadata.credits;
+      const intervalLabel = interval === 'monthly' ? 'Monthly' : interval === 'yearly' ? 'Yearly' : '';
+      if (credits) {
+        return `${planName} Plan (${intervalLabel}) - ${credits} video credits`;
+      }
+      return `${planName} Plan${intervalLabel ? ` (${intervalLabel})` : ''}`;
+    }
+
+    // Try to get from invoice metadata
+    if (invoice.metadata?.planName) {
+      const planName = invoice.metadata.planName;
+      const interval = invoice.metadata.interval;
+      const intervalLabel = interval === 'monthly' ? 'Monthly' : interval === 'yearly' ? 'Yearly' : '';
+      return `${planName} Plan${intervalLabel ? ` (${intervalLabel})` : ''}`;
+    }
+
+    // Fall back to line item description
+    if (invoice.lines.data.length > 0) {
+      const firstLine = invoice.lines.data[0];
+      return firstLine.description || firstLine.plan?.nickname || 'Subscription Payment';
+    }
+    return 'Subscription Payment';
+  }
+
+  private getChargeDescription(charge: Stripe.Charge): string {
+    // Try to get description from metadata or charge description
+    if (charge.metadata?.packageName) {
+      const credits = charge.metadata.credits;
+      if (credits) {
+        return `${charge.metadata.packageName} - ${credits} video credits`;
+      }
+      return charge.metadata.packageName;
+    }
+    if (charge.description) {
+      return charge.description;
+    }
+    // Try to extract from statement descriptor or other fields
+    if (charge.calculated_statement_descriptor) {
+      return charge.calculated_statement_descriptor;
+    }
+    // Format amount as a fallback description
+    const amount = (charge.amount / 100).toFixed(2);
+    return `Credit Purchase ($${amount})`;
   }
 }
 

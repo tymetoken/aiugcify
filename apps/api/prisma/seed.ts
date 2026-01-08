@@ -12,7 +12,7 @@ async function main() {
       name: 'Starter',
       credits: 5,
       priceInCents: 1500, // $15.00 ($3.00/video)
-      stripePriceId: 'price_1SmfiFCrXz9HvykqMtMlsJDH',
+      stripePriceId: 'price_1Smim8CrXz9Hvykqw60vOWTT',
       displayOrder: 1,
       bonusCredits: 0,
       badgeText: null,
@@ -22,7 +22,7 @@ async function main() {
       name: 'Creator',
       credits: 25,
       priceInCents: 5900, // $59.00 ($2.36/video)
-      stripePriceId: 'price_1SmficCrXz9HvykqqUoLsy02',
+      stripePriceId: 'price_1SmioaCrXz9HvykqtS2EDDWr',
       displayOrder: 2,
       bonusCredits: 0,
       badgeText: 'Most Popular',
@@ -32,7 +32,7 @@ async function main() {
       name: 'Pro',
       credits: 100,
       priceInCents: 19900, // $199.00 ($1.99/video)
-      stripePriceId: 'price_1Smfj0CrXz9Hvykq30rE5KRp',
+      stripePriceId: 'price_1SmipxCrXz9HvykqxcJrIWbB',
       displayOrder: 3,
       bonusCredits: 0,
       badgeText: 'Best Value',
@@ -42,7 +42,7 @@ async function main() {
       name: 'Agency',
       credits: 500,
       priceInCents: 74900, // $749.00 ($1.50/video)
-      stripePriceId: 'price_1SmfjJCrXz9HvykqhXIUAhsv',
+      stripePriceId: 'price_1SmirFCrXz9Hvykq1NP42Qb9',
       displayOrder: 4,
       bonusCredits: 0,
       badgeText: null,
@@ -68,12 +68,12 @@ async function main() {
       name: 'Basic',
       description: 'Perfect for getting started with UGC videos',
       monthlyPriceInCents: 1900, // $19/month
-      monthlyStripePriceId: 'price_1SmgtiCrXz9HvykqDLyRhECZ',
+      monthlyStripePriceId: 'price_1Smp62CrXz9HvykqO92OdmN6', // Basic Plan (Monthly) - $19.00
       monthlyCredits: 10,
       yearlyPriceInCents: 19200, // $192/year (save ~16%)
-      yearlyStripePriceId: 'price_1Smgv2CrXz9HvykqOTqaC9OJ',
+      yearlyStripePriceId: 'price_1Sn6JMCrXz9HvykqViBsTKd8', // Basic Plan (Yearly) - $192.00 (fixed)
       yearlyCredits: 120, // 10 credits/month * 12
-      yearlyBonusCredits: 20, // +20 bonus credits for yearly
+      yearlyBonusCredits: 0,
       features: ['10 videos per month', 'HD quality exports', 'Email support'],
       displayOrder: 1,
       badgeText: null,
@@ -83,12 +83,12 @@ async function main() {
       name: 'Standard',
       description: 'Best for growing creators and small businesses',
       monthlyPriceInCents: 4900, // $49/month
-      monthlyStripePriceId: 'price_1SmgvOCrXz9HvykqRh5cJsc6',
+      monthlyStripePriceId: 'price_1Smp6gCrXz9HvykqXQAFp3U5', // Separate product: Standard Plan (Monthly)
       monthlyCredits: 30,
       yearlyPriceInCents: 49200, // $492/year (save ~16%)
-      yearlyStripePriceId: 'price_1SmgvfCrXz9Hvykq78VHPp5U',
+      yearlyStripePriceId: 'price_1Smp6gCrXz9HvykqpYfjxANZ', // Separate product: Standard Plan (Yearly)
       yearlyCredits: 360, // 30 credits/month * 12
-      yearlyBonusCredits: 60, // +60 bonus credits for yearly
+      yearlyBonusCredits: 0,
       features: ['30 videos per month', '4K quality exports', 'Priority support', 'Custom templates'],
       displayOrder: 2,
       badgeText: 'Most Popular',
@@ -101,9 +101,9 @@ async function main() {
       monthlyStripePriceId: 'price_1Smgw5CrXz9HvykqgMiY56yL',
       monthlyCredits: 75,
       yearlyPriceInCents: 99600, // $996/year (save ~16%)
-      yearlyStripePriceId: 'price_1SmgwRCrXz9HvykqALibdeJe',
+      yearlyStripePriceId: 'price_1SmkayCrXz9HvykqGOcdL8Yc',
       yearlyCredits: 900, // 75 credits/month * 12
-      yearlyBonusCredits: 150, // +150 bonus credits for yearly
+      yearlyBonusCredits: 0,
       features: ['75 videos per month', '4K quality exports', 'Dedicated support', 'API access', 'White-label options'],
       displayOrder: 3,
       badgeText: 'Best Value',

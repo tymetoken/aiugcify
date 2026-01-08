@@ -1,27 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { useUIStore } from '../store/uiStore';
 import { apiClient } from '@/shared/api-client';
 import { Button } from '../components/Button';
-
-const LAST_DOWNLOAD_FOLDER_KEY = 'aiugcify_last_download_folder';
 
 export function VideoReadyPage() {
   const { currentVideo, reset } = useVideoStore();
   const { setPage } = useUIStore();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [lastDownloadFolder, setLastDownloadFolder] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Load last download folder on mount
-  useEffect(() => {
-    chrome.storage.local.get([LAST_DOWNLOAD_FOLDER_KEY], (result) => {
-      if (result[LAST_DOWNLOAD_FOLDER_KEY]) {
-        setLastDownloadFolder(result[LAST_DOWNLOAD_FOLDER_KEY]);
-      }
-    });
-  }, []);
 
   const handleDownload = async () => {
     if (!currentVideo?.id) return;
@@ -31,130 +19,68 @@ export function VideoReadyPage() {
       // First try to get a fresh download URL from the API
       const { downloadUrl } = await apiClient.getDownloadUrl(currentVideo.id);
 
-      // Ensure URL requests MP4 format by modifying Cloudinary URL
-      let mp4Url = downloadUrl;
-      if (downloadUrl.includes('cloudinary.com') || downloadUrl.includes('res.cloudinary.com')) {
-        // Check if the URL already has MP4 transformations
-        const hasVideoCodec = downloadUrl.includes('vc_h264') || downloadUrl.includes('vc_auto');
-        const hasMp4Format = downloadUrl.includes('f_mp4') || downloadUrl.includes('fetch_format') || downloadUrl.match(/\.mp4(\?|$)/);
-
-        if (!hasVideoCodec || !hasMp4Format) {
-          // Add vc_h264,f_mp4 transformation to force MP4/H264 format
-          // Pattern matches: /video/upload/ or /video/upload/s--xxx--/
-          const transformPattern = /(\/video\/upload\/)(s--[^/]+--\/)?/;
-          if (transformPattern.test(downloadUrl)) {
-            mp4Url = downloadUrl.replace(
-              transformPattern,
-              '$1$2vc_h264,f_mp4/'
-            );
-          }
-        }
-
-        // Ensure .mp4 extension - handle GIF, WebM, and other formats
-        if (!mp4Url.match(/\.mp4(\?|$)/i)) {
-          // Replace common video extensions with .mp4
-          mp4Url = mp4Url.replace(/\.(gif|webm|mov|avi|mkv)(\?|$)/i, '.mp4$2');
-          // If no extension found before query string, add .mp4
-          if (!mp4Url.match(/\.\w+(\?|$)/)) {
-            const queryIndex = mp4Url.indexOf('?');
-            if (queryIndex > -1) {
-              mp4Url = mp4Url.slice(0, queryIndex) + '.mp4' + mp4Url.slice(queryIndex);
-            } else {
-              mp4Url += '.mp4';
-            }
-          }
-        }
+      if (!downloadUrl) {
+        throw new Error('No download URL available');
       }
 
-      // Generate a clean filename
+      // Generate a clean filename (just the filename, not full path)
       const baseFilename = `${currentVideo.productTitle?.replace(/[^a-z0-9]/gi, '_') || 'ugc-video'}.mp4`;
 
-      // Use last download folder if available
-      const filename = lastDownloadFolder
-        ? `${lastDownloadFolder}/${baseFilename}`
-        : baseFilename;
-
       // Use Chrome Downloads API to trigger "Save As" dialog
+      // Note: Don't use absolute paths in filename - Chrome handles the folder via saveAs dialog
       const downloadId = await chrome.downloads.download({
-        url: mp4Url,
-        filename: filename,
+        url: downloadUrl,
+        filename: baseFilename,
         saveAs: true, // This forces the "Save As" dialog
       });
 
-      // Listen for download completion to save the folder path
-      if (downloadId) {
-        const listener = (delta: chrome.downloads.DownloadDelta) => {
-          if (delta.id === downloadId && delta.state?.current === 'complete') {
-            // Get the download item to find the final path
-            chrome.downloads.search({ id: downloadId }, (downloads) => {
-              if (downloads[0]?.filename) {
-                // Extract folder path from full file path
-                const fullPath = downloads[0].filename;
-                const lastSlashIndex = Math.max(fullPath.lastIndexOf('/'), fullPath.lastIndexOf('\\'));
-                if (lastSlashIndex > 0) {
-                  const folderPath = fullPath.substring(0, lastSlashIndex);
-                  // Save to storage
-                  chrome.storage.local.set({ [LAST_DOWNLOAD_FOLDER_KEY]: folderPath });
-                  setLastDownloadFolder(folderPath);
-                }
-              }
-            });
+      if (!downloadId) {
+        throw new Error('Download failed to start');
+      }
+
+      // Listen for download errors
+      const listener = (delta: chrome.downloads.DownloadDelta) => {
+        if (delta.id === downloadId) {
+          if (delta.state?.current === 'complete') {
             chrome.downloads.onChanged.removeListener(listener);
-          } else if (delta.id === downloadId && delta.state?.current === 'interrupted') {
+          } else if (delta.state?.current === 'interrupted') {
+            console.error('Download interrupted');
             chrome.downloads.onChanged.removeListener(listener);
           }
-        };
-        chrome.downloads.onChanged.addListener(listener);
-      }
+          if (delta.error) {
+            console.error('Download error:', delta.error);
+          }
+        }
+      };
+      chrome.downloads.onChanged.addListener(listener);
+
     } catch (error) {
       console.error('Failed to download video:', error);
 
-      // Fallback: fetch as blob and use data URL if Chrome API fails
+      // Fallback: use cloudinaryUrl directly
       try {
-        let videoUrl = currentVideo.cloudinaryUrl || currentVideo.downloadUrl;
+        const videoUrl = currentVideo.cloudinaryUrl || currentVideo.downloadUrl;
         if (videoUrl) {
-          // Force MP4 format for Cloudinary URLs
-          if (videoUrl.includes('cloudinary.com') || videoUrl.includes('res.cloudinary.com')) {
-            // Check if the URL already has MP4 transformations
-            const hasVideoCodec = videoUrl.includes('vc_h264') || videoUrl.includes('vc_auto');
-            const hasMp4Format = videoUrl.includes('f_mp4') || videoUrl.includes('fetch_format') || videoUrl.match(/\.mp4(\?|$)/);
-
-            if (!hasVideoCodec || !hasMp4Format) {
-              // Add vc_h264,f_mp4 transformation to force MP4/H264 format
-              const transformPattern = /(\/video\/upload\/)(s--[^/]+--\/)?/;
-              if (transformPattern.test(videoUrl)) {
-                videoUrl = videoUrl.replace(
-                  transformPattern,
-                  '$1$2vc_h264,f_mp4/'
-                );
-              }
-            }
-            // Ensure .mp4 extension - handle GIF, WebM, and other formats
-            if (!videoUrl.match(/\.mp4(\?|$)/i)) {
-              videoUrl = videoUrl.replace(/\.(gif|webm|mov|avi|mkv)(\?|$)/i, '.mp4$2');
-            }
-          }
-
-          const response = await fetch(videoUrl);
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-
           const baseFilename = `${currentVideo.productTitle?.replace(/[^a-z0-9]/gi, '_') || 'ugc-video'}.mp4`;
-          const filename = lastDownloadFolder
-            ? `${lastDownloadFolder}/${baseFilename}`
-            : baseFilename;
 
-          await chrome.downloads.download({
-            url: blobUrl,
-            filename: filename,
+          const downloadId = await chrome.downloads.download({
+            url: videoUrl,
+            filename: baseFilename,
             saveAs: true,
           });
 
-          // Clean up after a delay to ensure download starts
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+          if (!downloadId) {
+            // Last resort: open in new tab
+            window.open(videoUrl, '_blank');
+          }
         }
       } catch (fallbackError) {
         console.error('Fallback download also failed:', fallbackError);
+        // Open URL directly as last resort
+        const videoUrl = currentVideo.cloudinaryUrl || currentVideo.downloadUrl;
+        if (videoUrl) {
+          window.open(videoUrl, '_blank');
+        }
       }
     }
     setIsDownloading(false);

@@ -40,37 +40,30 @@ const VIDEO_STYLES: { value: VideoStyle; label: string; description: string; ico
 
 export function ProductPage() {
   const { scrapedProduct } = useProductStore();
-  const { selectedStyle, setSelectedStyle, generateScript, isLoading, additionalNotes, setAdditionalNotes } = useVideoStore();
-  const { isAuthenticated, user } = useAuthStore();
+  const {
+    selectedStyle,
+    setSelectedStyle,
+    generateScript,
+    isLoading,
+    additionalNotes,
+    setAdditionalNotes,
+    isGeneratingScript,
+    scriptGenerationStep,
+    currentScript,
+    error,
+    clearError,
+  } = useVideoStore();
+  const { isAuthenticated } = useAuthStore();
   const { setPage } = useUIStore();
 
-  // Check if user has an active subscription (paid user)
-  const hasSubscription = user?.hasActiveSubscription ?? false;
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Simulate step progression while generating
+  // Navigate to script-editor when script is ready
   useEffect(() => {
-    if (!isGenerating) {
-      setCurrentStep(0);
-      return;
+    if (currentScript && !isGeneratingScript) {
+      setPage('script-editor');
     }
-
-    // Step 1 immediately
-    setCurrentStep(1);
-
-    // Step 2 after 2 seconds
-    const timer1 = setTimeout(() => setCurrentStep(2), 2000);
-
-    // Step 3 after 5 seconds
-    const timer2 = setTimeout(() => setCurrentStep(3), 5000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [isGenerating]);
+  }, [currentScript, isGeneratingScript, setPage]);
 
   const handleGenerateScript = async () => {
     if (!scrapedProduct) return;
@@ -81,12 +74,11 @@ export function ProductPage() {
       return;
     }
 
-    setIsGenerating(true);
     try {
       await generateScript(scrapedProduct, additionalNotes || undefined);
-      setPage('script-editor');
-    } finally {
-      setIsGenerating(false);
+      // Navigation is handled by the useEffect above when currentScript is set
+    } catch {
+      // Error is handled in the store
     }
   };
 
@@ -94,12 +86,11 @@ export function ProductPage() {
     setShowLoginModal(false);
     // Proceed with script generation after successful login
     if (scrapedProduct) {
-      setIsGenerating(true);
       try {
         await generateScript(scrapedProduct, additionalNotes || undefined);
-        setPage('script-editor');
-      } finally {
-        setIsGenerating(false);
+        // Navigation is handled by the useEffect above when currentScript is set
+      } catch {
+        // Error is handled in the store
       }
     }
   };
@@ -189,46 +180,52 @@ export function ProductPage() {
       <div>
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Script Direction</h4>
-          {hasSubscription && (
-            <span className={`text-xs ${additionalNotes.length > MAX_NOTES_LENGTH * 0.9 ? 'text-amber-500' : 'text-slate-400'}`}>
-              {additionalNotes.length}/{MAX_NOTES_LENGTH}
-            </span>
-          )}
+          <span className={`text-xs ${additionalNotes.length > MAX_NOTES_LENGTH * 0.9 ? 'text-amber-500' : 'text-slate-400'}`}>
+            {additionalNotes.length}/{MAX_NOTES_LENGTH}
+          </span>
         </div>
-        {hasSubscription ? (
-          <div className="relative">
-            <textarea
-              value={additionalNotes}
-              onChange={(e) => setAdditionalNotes(e.target.value.slice(0, MAX_NOTES_LENGTH))}
-              placeholder="Add specific instructions, features to highlight, or creative direction..."
-              className="w-full p-3 bg-white border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-              rows={2}
-              spellCheck={false}
-            />
-          </div>
-        ) : (
-          <button
-            onClick={() => setPage('credits')}
-            className="w-full p-3 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-dashed border-amber-300 rounded-xl hover:border-amber-400 hover:from-amber-100 hover:to-orange-100 transition-all group"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-lg">✨</span>
-              <div className="text-left">
-                <p className="text-sm font-semibold text-amber-700 group-hover:text-amber-800">
-                  Unlock Script Customization
-                </p>
-                <p className="text-xs text-amber-600/80">
-                  Guide AI with your creative direction
-                </p>
-              </div>
-              <ChevronRightIcon className="w-4 h-4 text-amber-500 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </button>
-        )}
+        <div className="relative">
+          <textarea
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes(e.target.value.slice(0, MAX_NOTES_LENGTH))}
+            placeholder="Add specific instructions, features to highlight, or creative direction..."
+            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+            rows={2}
+            spellCheck={false}
+          />
+        </div>
       </div>
 
       {/* Credit Tooltip for first-time users */}
       <CreditTooltip className="mb-2" />
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">Script Generation Failed</p>
+              <p className="text-xs text-red-600 mt-1">{error}</p>
+            </div>
+            <button
+              onClick={clearError}
+              className="text-red-400 hover:text-red-600 transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Generate Button */}
       <div className="space-y-2">
@@ -257,7 +254,7 @@ export function ProductPage() {
       />
 
       {/* Script Generation Progress Overlay */}
-      {isGenerating && (
+      {isGeneratingScript && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ top: '-100px', bottom: '-100px', left: '-100px', right: '-100px' }}>
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -265,7 +262,21 @@ export function ProductPage() {
           {/* Progress Card */}
           <div className="relative w-[calc(100%-48px)] max-w-[320px] bg-white rounded-2xl shadow-xl animate-scale-in overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-accent-500 p-5 text-center">
+            <div className="bg-gradient-to-r from-primary-600 to-accent-500 p-5 text-center relative">
+              {/* Cancel button */}
+              <button
+                onClick={() => {
+                  useVideoStore.getState().reset();
+                  setPage('dashboard');
+                }}
+                className="absolute top-3 right-3 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                title="Cancel"
+              >
+                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
               <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 animate-pulse-slow">
                 <SparklesIcon className="w-8 h-8 text-white" />
               </div>
@@ -279,14 +290,14 @@ export function ProductPage() {
                 <div key={step.id} className="flex items-start gap-3">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-                      currentStep >= step.id
+                      scriptGenerationStep >= step.id
                         ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white'
                         : 'bg-dark-100 text-dark-400'
                     }`}
                   >
-                    {currentStep > step.id ? (
+                    {scriptGenerationStep > step.id ? (
                       <CheckIcon className="w-4 h-4" />
-                    ) : currentStep === step.id ? (
+                    ) : scriptGenerationStep === step.id ? (
                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <span className="text-xs font-medium">{step.id}</span>
@@ -295,14 +306,14 @@ export function ProductPage() {
                   <div className="flex-1 pt-1">
                     <p
                       className={`text-sm font-medium transition-colors ${
-                        currentStep >= step.id ? 'text-dark-800' : 'text-dark-400'
+                        scriptGenerationStep >= step.id ? 'text-dark-800' : 'text-dark-400'
                       }`}
                     >
                       {step.label}
                     </p>
                     <p
                       className={`text-xs transition-colors ${
-                        currentStep >= step.id ? 'text-dark-500' : 'text-dark-300'
+                        scriptGenerationStep >= step.id ? 'text-dark-500' : 'text-dark-300'
                       }`}
                     >
                       {step.description}
@@ -317,7 +328,7 @@ export function ProductPage() {
               <div className="h-2 bg-dark-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-primary-500 to-accent-500 transition-all duration-500"
-                  style={{ width: `${(currentStep / GENERATION_STEPS.length) * 100}%` }}
+                  style={{ width: `${(scriptGenerationStep / GENERATION_STEPS.length) * 100}%` }}
                 />
               </div>
             </div>
@@ -342,14 +353,6 @@ function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
       <path d="M5 12l5 5L20 7" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 18l6-6-6-6" />
     </svg>
   );
 }

@@ -66,3 +66,22 @@ creditsRoutes.post(
   validate(schemas.changePlan),
   asyncHandler(creditsController.changeSubscriptionPlan)
 );
+
+// Complete checkout session (called from success page)
+creditsRoutes.post(
+  '/checkout/complete/:sessionId',
+  asyncHandler(creditsController.completeCheckout)
+);
+
+// Billing routes
+creditsRoutes.post(
+  '/billing/portal',
+  asyncHandler(authMiddleware),
+  asyncHandler(creditsController.createBillingPortalSession)
+);
+
+creditsRoutes.get(
+  '/billing/invoices',
+  asyncHandler(authMiddleware),
+  asyncHandler(creditsController.getInvoices)
+);

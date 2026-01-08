@@ -6,13 +6,13 @@ export function Header() {
   const { currentPage, setPage } = useUIStore();
 
   return (
-    <header className="glass sticky top-0 z-50 px-4 py-3 border-b border-white/20">
+    <header className="glass sticky top-0 z-50 px-4 py-3">
       <div className="flex items-center justify-between">
         <button
           onClick={() => setPage('dashboard')}
           className="flex items-center gap-2.5 group"
         >
-          <div className="w-9 h-9 bg-gradient-to-br from-primary-500 via-primary-600 to-accent-500 rounded-xl flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all group-hover:scale-105">
+          <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-soft group-hover:shadow-soft-lg transition-all group-hover:scale-105">
             <span className="text-white font-bold text-sm">AI</span>
           </div>
           <span className="font-bold text-dark-800 text-sm">UGCify</span>
@@ -24,10 +24,10 @@ export function Header() {
               {user && (
                 <button
                   onClick={() => setPage('credits')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
                     currentPage === 'credits'
-                      ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-glow'
-                      : 'bg-dark-100 text-dark-700 hover:bg-dark-200'
+                      ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-soft'
+                      : 'bg-white/60 text-dark-700 hover:bg-white/80 border border-white/50'
                   }`}
                 >
                   <CoinIcon className="w-4 h-4" />
@@ -39,8 +39,8 @@ export function Header() {
                 onClick={() => setPage('history')}
                 className={`p-2 rounded-xl transition-all ${
                   currentPage === 'history'
-                    ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-glow'
-                    : 'text-dark-500 hover:bg-dark-100 hover:text-dark-700'
+                    ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-soft'
+                    : 'text-dark-500 hover:bg-white/50 hover:text-primary-600'
                 }`}
                 title="Video History"
               >
@@ -48,8 +48,11 @@ export function Header() {
               </button>
 
               <button
-                onClick={logout}
-                className="p-2 rounded-xl text-dark-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                onClick={() => {
+                  logout();
+                  setPage('dashboard');
+                }}
+                className="p-2 rounded-xl text-dark-400 hover:bg-red-50/80 hover:text-red-500 transition-all"
                 title="Logout"
               >
                 <LogoutIcon className="w-5 h-5" />
@@ -58,7 +61,7 @@ export function Header() {
           ) : (
             <button
               onClick={() => setPage('login')}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-medium rounded-full shadow-glow hover:shadow-glow-lg transition-all hover:scale-105"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold rounded-full shadow-soft hover:shadow-soft-lg transition-all hover:scale-105"
             >
               <UserIcon className="w-4 h-4" />
               <span>Sign In</span>

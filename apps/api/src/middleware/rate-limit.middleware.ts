@@ -4,22 +4,24 @@ import { redisConnection } from '../config/redis.js';
 import { config, isDevelopment } from '../config/index.js';
 import { ErrorCodes } from '../utils/errors.js';
 
+// Skip Redis store in development to avoid Upstash limits during local dev
+const USE_REDIS_RATE_LIMIT = !isDevelopment;
+
 const createStore = () => {
+  if (!USE_REDIS_RATE_LIMIT) {
+    console.log('Using in-memory rate limiting (development mode)');
+    return undefined;
+  }
+
   try {
     return new RedisStore({
       // @ts-expect-error - RedisStore sendCommand type mismatch with ioredis
       sendCommand: async (...args: string[]) => {
-        try {
-          return await redisConnection.call(args[0], ...args.slice(1));
-        } catch (error) {
-          console.error('Redis rate limit command error:', error);
-          // Return null to allow request through on Redis failure
-          return null;
-        }
+        return await redisConnection.call(args[0], ...args.slice(1));
       },
     });
   } catch (error) {
-    console.error('Failed to create Redis store:', error);
+    console.error('Failed to create Redis store, falling back to in-memory:', error);
     return undefined;
   }
 };

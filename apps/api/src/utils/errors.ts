@@ -31,6 +31,7 @@ export const ErrorCodes = {
   NOT_FOUND: 'NOT_FOUND',
   BAD_REQUEST: 'BAD_REQUEST',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
@@ -87,5 +88,9 @@ export class AppError extends Error {
 
   static internal(message = 'Internal server error') {
     return new AppError(500, ErrorCodes.INTERNAL_ERROR, message, false);
+  }
+
+  static serviceUnavailable(message = 'Service temporarily unavailable') {
+    return new AppError(503, ErrorCodes.SERVICE_UNAVAILABLE, message);
   }
 }

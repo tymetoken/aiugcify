@@ -3,8 +3,10 @@ import { prisma } from '../config/database.js';
 import { openaiService } from './openai.service.js';
 import { creditsService } from './credits.service.js';
 import { videoQueue } from '../queues/video.queue.js';
+import { processVideoDirect } from './direct-video-processor.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { isDevelopment } from '../config/index.js';
 import type { ProductData, VideoStyle, Video, VideoListItem } from '@aiugcify/shared-types';
 
 interface GenerateScriptInput {
@@ -37,25 +39,13 @@ class VideosService {
   ): Promise<GenerateScriptResult> {
     const { productData, videoStyle, options } = input;
 
-    // Backend validation: Strip additionalNotes for free users
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { hasActiveSubscription: true },
-    });
-
-    const sanitizedOptions = { ...options };
-    if (!user?.hasActiveSubscription && sanitizedOptions?.additionalNotes) {
-      logger.info({ userId }, 'Stripping additionalNotes for free user');
-      delete sanitizedOptions.additionalNotes;
-    }
-
     // Step 1: Analyze product with Product Breakdown GPT
     logger.info({ productTitle: productData.title, userId }, 'Starting product analysis');
     const analyzedProduct = await openaiService.analyzeProduct(productData);
 
     // Step 2: Generate script using the analyzed product data
     logger.info({ productName: analyzedProduct.productName, userId }, 'Generating script from analyzed product');
-    const scriptResult = await openaiService.generateScript(productData, videoStyle, sanitizedOptions, analyzedProduct);
+    const scriptResult = await openaiService.generateScript(productData, videoStyle, options, analyzedProduct);
 
     // Create video record with analyzed product data
     const video = await prisma.video.create({
@@ -74,8 +64,13 @@ class VideosService {
         videoStyle,
         videoDuration: scriptResult.estimatedDuration,
         scriptGeneratedAt: new Date(),
+        creditsUsed: 1, // Mark credit as used
       },
     });
+
+    // Deduct credit when script is generated
+    await creditsService.deductCredits(userId, 1, video.id, 'Video script generated');
+    logger.info({ videoId: video.id, userId }, 'Credit deducted for script generation');
 
     logger.info({ videoId: video.id, userId }, 'Script generated successfully');
 
@@ -117,8 +112,7 @@ class VideosService {
       );
     }
 
-    // Deduct credit
-    await creditsService.deductCredits(userId, 1, videoId, 'Video generation');
+    // Credit was already deducted at script generation time
 
     // Determine final script
     const finalScript = video.editedScript || video.generatedScript;
@@ -127,34 +121,71 @@ class VideosService {
       throw new AppError(400, ErrorCodes.BAD_REQUEST, 'No script available');
     }
 
-    // Update status and add to queue
+    // Get the main product image for image-to-video generation
+    const productImageUrl = video.productImages?.[0];
+
+    // Try to add to video generation queue
+    let useDirectProcessing = false;
+    try {
+      await videoQueue.add(
+        'generate-video',
+        {
+          videoId,
+          script: finalScript,
+          style: video.videoStyle,
+          duration: video.videoDuration || 20,
+          productImageUrl, // Pass product image for image-to-video generation
+        },
+        {
+          jobId: `video-${videoId}`,
+        }
+      );
+    } catch (queueError) {
+      const errorMessage = (queueError as Error).message;
+
+      // Handle Redis unavailability - use direct processing in development
+      if (errorMessage.includes('max requests limit exceeded') || errorMessage.includes('ECONNREFUSED')) {
+        if (isDevelopment) {
+          logger.warn({ videoId, error: errorMessage }, 'Redis unavailable, using direct processing');
+          useDirectProcessing = true;
+        } else {
+          logger.error({ videoId, error: errorMessage }, 'Redis queue unavailable');
+          throw new AppError(
+            503,
+            ErrorCodes.SERVICE_UNAVAILABLE,
+            'Video generation service is temporarily unavailable. Please try again in a few minutes.'
+          );
+        }
+      } else {
+        throw queueError;
+      }
+    }
+
+    // Update status
     const updated = await prisma.video.update({
       where: { id: videoId },
       data: {
-        status: 'QUEUED',
+        status: useDirectProcessing ? 'GENERATING' : 'QUEUED',
         finalScript,
       },
     });
 
-    // Get the main product image for image-to-video generation
-    const productImageUrl = video.productImages?.[0];
-
-    // Add to video generation queue
-    await videoQueue.add(
-      'generate-video',
-      {
+    // If using direct processing, start it in the background
+    if (useDirectProcessing) {
+      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Starting direct video processing');
+      // Don't await - run in background
+      processVideoDirect({
         videoId,
         script: finalScript,
         style: video.videoStyle,
         duration: video.videoDuration || 20,
-        productImageUrl, // Pass product image for image-to-video generation
-      },
-      {
-        jobId: `video-${videoId}`,
-      }
-    );
-
-    logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video queued for generation');
+        productImageUrl,
+      }).catch((err) => {
+        logger.error({ videoId, error: err }, 'Direct video processing error');
+      });
+    } else {
+      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video queued for generation');
+    }
 
     return this.mapToVideo(updated);
   }
@@ -225,11 +256,13 @@ class VideosService {
       );
     }
 
-    // If credits were deducted (status is QUEUED), refund them
-    if (video.status === 'QUEUED') {
+    // Refund credits if they were deducted (SCRIPT_READY or QUEUED status)
+    if (video.status === 'SCRIPT_READY' || video.status === 'QUEUED') {
       await creditsService.refundCredits(userId, 1, videoId, 'Video cancelled');
+    }
 
-      // Remove from queue
+    // Remove from queue if queued
+    if (video.status === 'QUEUED') {
       const job = await videoQueue.getJob(`video-${videoId}`);
       if (job) {
         await job.remove();
@@ -259,38 +292,88 @@ class VideosService {
       throw new AppError(400, ErrorCodes.BAD_REQUEST, 'No script available for retry');
     }
 
-    // Deduct another credit for retry
-    await creditsService.deductCredits(userId, 1, videoId, 'Video retry');
-
-    // Update status and re-queue
-    const updated = await prisma.video.update({
-      where: { id: videoId },
-      data: {
-        status: 'QUEUED',
-        errorMessage: null,
-        errorCode: null,
-        retryCount: { increment: 1 },
-      },
-    });
-
     // Get the main product image for image-to-video generation
     const productImageUrl = video.productImages?.[0];
 
-    await videoQueue.add(
-      'generate-video',
-      {
+    // Increment retry count first to get the job ID
+    const preUpdated = await prisma.video.update({
+      where: { id: videoId },
+      data: { retryCount: { increment: 1 } },
+    });
+
+    // Try to add to queue first before deducting credits
+    let useDirectProcessing = false;
+    try {
+      await videoQueue.add(
+        'generate-video',
+        {
+          videoId,
+          script: video.finalScript,
+          style: video.videoStyle,
+          duration: video.videoDuration || 20,
+          productImageUrl,
+        },
+        {
+          jobId: `video-${videoId}-retry-${preUpdated.retryCount}`,
+        }
+      );
+    } catch (queueError) {
+      const errorMessage = (queueError as Error).message;
+
+      if (errorMessage.includes('max requests limit exceeded') || errorMessage.includes('ECONNREFUSED')) {
+        if (isDevelopment) {
+          logger.warn({ videoId, error: errorMessage }, 'Redis unavailable for retry, using direct processing');
+          useDirectProcessing = true;
+        } else {
+          // Revert retry count increment
+          await prisma.video.update({
+            where: { id: videoId },
+            data: { retryCount: { decrement: 1 } },
+          });
+          logger.error({ videoId, error: errorMessage }, 'Redis queue unavailable for retry');
+          throw new AppError(
+            503,
+            ErrorCodes.SERVICE_UNAVAILABLE,
+            'Video generation service is temporarily unavailable. Please try again in a few minutes.'
+          );
+        }
+      } else {
+        // Revert retry count increment for other errors
+        await prisma.video.update({
+          where: { id: videoId },
+          data: { retryCount: { decrement: 1 } },
+        });
+        throw queueError;
+      }
+    }
+
+    // Deduct credit and update status
+    await creditsService.deductCredits(userId, 1, videoId, 'Video retry');
+
+    const updated = await prisma.video.update({
+      where: { id: videoId },
+      data: {
+        status: useDirectProcessing ? 'GENERATING' : 'QUEUED',
+        errorMessage: null,
+        errorCode: null,
+      },
+    });
+
+    // If using direct processing, start it in the background
+    if (useDirectProcessing) {
+      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Starting direct video retry processing');
+      processVideoDirect({
         videoId,
         script: video.finalScript,
         style: video.videoStyle,
         duration: video.videoDuration || 20,
-        productImageUrl, // Pass product image for image-to-video generation
-      },
-      {
-        jobId: `video-${videoId}-retry-${updated.retryCount}`,
-      }
-    );
-
-    logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video retry queued');
+        productImageUrl,
+      }).catch((err) => {
+        logger.error({ videoId, error: err }, 'Direct video retry processing error');
+      });
+    } else {
+      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video retry queued');
+    }
 
     return this.mapToVideo(updated);
   }

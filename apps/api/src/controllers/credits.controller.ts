@@ -93,6 +93,33 @@ class CreditsController {
     const result = await stripeService.changeSubscriptionPlan(user.id, newPlanId, newInterval);
     return sendSuccess(res, result);
   }
+
+  async completeCheckout(req: Request, res: Response) {
+    const { sessionId } = req.params;
+
+    const result = await stripeService.completeCheckoutSession(sessionId);
+    return sendSuccess(res, result);
+  }
+
+  // Billing methods
+  async createBillingPortalSession(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+    const { returnUrl } = req.body;
+
+    const result = await stripeService.createBillingPortalSession(
+      user.id,
+      returnUrl || `${config.FRONTEND_URL}/credits`
+    );
+    return sendSuccess(res, result);
+  }
+
+  async getInvoices(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const result = await stripeService.getInvoices(user.id, limit);
+    return sendSuccess(res, result);
+  }
 }
 
 export const creditsController = new CreditsController();

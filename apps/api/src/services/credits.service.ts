@@ -1,5 +1,4 @@
 import { prisma, type PrismaTransactionClient } from '../config/database.js';
-import { isDevelopment } from '../config/index.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { CreditPackage, CreditTransaction } from '@aiugcify/shared-types';
@@ -70,16 +69,6 @@ class CreditsService {
     videoId: string,
     description: string
   ): Promise<{ success: boolean; newBalance: number }> {
-    // Skip credit deduction in development mode - unlimited credits
-    if (isDevelopment) {
-      logger.info({ userId, amount, videoId }, 'DEV MODE: Skipping credit deduction');
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { creditBalance: true },
-      });
-      return { success: true, newBalance: user?.creditBalance ?? 9999 };
-    }
-
     // Atomic transaction to prevent race conditions
     const result = await prisma.$transaction(async (tx: PrismaTransactionClient) => {
       const user = await tx.user.findUnique({

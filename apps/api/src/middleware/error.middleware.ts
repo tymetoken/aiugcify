@@ -52,6 +52,17 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     return sendError(res, 401, ErrorCodes.TOKEN_EXPIRED, 'Token expired');
   }
 
+  // Handle Redis errors (rate limit exceeded, connection issues)
+  if (err.name === 'ReplyError' && err.message.includes('max requests limit exceeded')) {
+    logger.error({ message: err.message }, 'Redis rate limit exceeded');
+    return sendError(
+      res,
+      503,
+      ErrorCodes.SERVICE_UNAVAILABLE,
+      'Service temporarily unavailable due to high traffic. Please try again in a few minutes.'
+    );
+  }
+
   // Handle Prisma errors
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     logger.error({ prismaCode: err.code, meta: err.meta }, 'Prisma known error');

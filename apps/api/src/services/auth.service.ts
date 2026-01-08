@@ -102,8 +102,20 @@ class AuthService {
       throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
+    // Check if user was created via Google Auth (no password set)
+    if (user.passwordHash.startsWith('google:')) {
+      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'This account uses Google Sign-In. Please use "Continue with Google" to log in.');
+    }
+
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    let isValidPassword = false;
+    try {
+      isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    } catch (error) {
+      // Invalid hash format - likely a corrupted password or non-bcrypt hash
+      logger.error({ userId: user.id, error }, 'Password comparison failed - invalid hash format');
+      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid email or password');
+    }
 
     if (!isValidPassword) {
       throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid email or password');

@@ -252,6 +252,24 @@ export interface SubscriptionCheckoutResponse {
   checkoutUrl: string;
 }
 
+// Billing/Invoice Types
+export type InvoiceStatus = 'draft' | 'open' | 'paid' | 'uncollectible' | 'void';
+
+export interface Invoice {
+  id: string;
+  number: string | null;
+  status: InvoiceStatus | null;
+  amountDue: number;
+  amountPaid: number;
+  currency: string;
+  created: Date;
+  periodStart: Date | null;
+  periodEnd: Date | null;
+  hostedInvoiceUrl: string | null;
+  invoicePdf: string | null;
+  description: string;
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   success: true;

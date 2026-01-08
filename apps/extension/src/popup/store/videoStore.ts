@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { chromeStorageAdapter } from '@/shared/chrome-storage';
 import { apiClient } from '@/shared/api-client';
+import { useAuthStore } from './authStore';
 import type {
   Video,
   VideoListItem,
@@ -19,6 +20,8 @@ interface VideoState {
   videos: VideoListItem[];
   isLoading: boolean;
   isGenerating: boolean;
+  isGeneratingScript: boolean; // Persisted state for script generation progress
+  scriptGenerationStep: number; // Current step in script generation (1-3)
   generationProgress: number;
   error: string | null;
   _hasHydrated: boolean;
@@ -39,6 +42,7 @@ interface VideoState {
   clearError: () => void;
   setHasHydrated: (value: boolean) => void;
   resumePollingIfNeeded: () => void;
+  setScriptGenerationStep: (step: number) => void;
 }
 
 export const useVideoStore = create<VideoState>()(
@@ -52,6 +56,8 @@ export const useVideoStore = create<VideoState>()(
       videos: [],
       isLoading: false,
       isGenerating: false,
+      isGeneratingScript: false,
+      scriptGenerationStep: 0,
       generationProgress: 0,
       error: null,
       _hasHydrated: false,
@@ -59,6 +65,8 @@ export const useVideoStore = create<VideoState>()(
       setHasHydrated: (value: boolean) => set({ _hasHydrated: value }),
 
       setAdditionalNotes: (notes: string) => set({ additionalNotes: notes }),
+
+      setScriptGenerationStep: (step: number) => set({ scriptGenerationStep: step }),
 
       resumePollingIfNeeded: () => {
         const { isGenerating, currentVideo, currentScript } = get();
@@ -75,12 +83,28 @@ export const useVideoStore = create<VideoState>()(
         // Reset any old video state before generating new script
         set({
           isLoading: true,
+          isGeneratingScript: true,
+          scriptGenerationStep: 1,
           error: null,
           currentScript: null,
           currentVideo: null,
           isGenerating: false,
           generationProgress: 0,
         });
+
+        // Progress step 2 after a delay
+        setTimeout(() => {
+          if (get().isGeneratingScript) {
+            set({ scriptGenerationStep: 2 });
+          }
+        }, 2000);
+
+        // Progress step 3 after a longer delay
+        setTimeout(() => {
+          if (get().isGeneratingScript) {
+            set({ scriptGenerationStep: 3 });
+          }
+        }, 5000);
 
         try {
           const response = await apiClient.generateScript(productData, selectedStyle, {
@@ -93,11 +117,18 @@ export const useVideoStore = create<VideoState>()(
             currentScript: response,
             editedScript: response.script,
             isLoading: false,
+            isGeneratingScript: false,
+            scriptGenerationStep: 0,
           });
+
+          // Refresh user to update credit balance after script generation
+          useAuthStore.getState().refreshUser();
         } catch (error) {
           set({
             error: (error as Error).message,
             isLoading: false,
+            isGeneratingScript: false,
+            scriptGenerationStep: 0,
           });
           throw error;
         }
@@ -166,8 +197,22 @@ export const useVideoStore = create<VideoState>()(
           // Start polling
           get().pollVideoStatus();
         } catch (error) {
+          const errorMessage = (error as Error).message;
+
+          // Handle stale video ID - video no longer exists in database
+          if (errorMessage.includes('Video not found') || errorMessage.includes('not found')) {
+            set({
+              currentScript: null,
+              currentVideo: null,
+              editedScript: '',
+              isLoading: false,
+              error: 'This script session has expired. Please generate a new script.',
+            });
+            return;
+          }
+
           set({
-            error: (error as Error).message,
+            error: errorMessage,
             isLoading: false,
           });
           throw error;
@@ -219,9 +264,22 @@ export const useVideoStore = create<VideoState>()(
               });
             }
           } catch (error) {
+            const errorMessage = (error as Error).message;
+
+            // Handle stale video ID - stop polling and clear state
+            if (errorMessage.includes('Video not found') || errorMessage.includes('not found')) {
+              set({
+                currentScript: null,
+                currentVideo: null,
+                isGenerating: false,
+                error: 'Video session expired. Please generate a new script.',
+              });
+              return;
+            }
+
             set({
               isGenerating: false,
-              error: (error as Error).message,
+              error: errorMessage,
             });
           }
         };
@@ -275,6 +333,9 @@ export const useVideoStore = create<VideoState>()(
             isLoading: false,
           });
 
+          // Refresh user to update credit balance after retry (costs 1 credit)
+          useAuthStore.getState().refreshUser();
+
           // Start polling for status
           get().pollVideoStatus();
         } catch (error) {
@@ -297,6 +358,8 @@ export const useVideoStore = create<VideoState>()(
           editedScript: '',
           additionalNotes: '',
           isGenerating: false,
+          isGeneratingScript: false,
+          scriptGenerationStep: 0,
           generationProgress: 0,
           error: null,
         });
@@ -314,6 +377,8 @@ export const useVideoStore = create<VideoState>()(
         selectedStyle: state.selectedStyle,
         additionalNotes: state.additionalNotes,
         isGenerating: state.isGenerating,
+        // Note: isGeneratingScript and scriptGenerationStep are NOT persisted
+        // They are transient UI states that should reset when popup reopens
         generationProgress: state.generationProgress,
       }),
       onRehydrateStorage: () => (state) => {
