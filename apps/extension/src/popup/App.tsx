@@ -13,13 +13,14 @@ import { GeneratingPage } from './pages/GeneratingPage';
 import { VideoReadyPage } from './pages/VideoReadyPage';
 import { CreditsPage } from './pages/CreditsPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { useUIStore } from './store/uiStore';
 import type { GenerateScriptResponse } from '@aiugcify/shared-types';
 
 export default function App() {
   const { isAuthenticated, initialize, isLoading: authLoading, isFirstLogin, refreshUser } = useAuthStore();
   const { checkCurrentTab, setScrapedProduct, _hasHydrated: productHydrated } = useProductStore();
-  const { currentPage, setPage, _hasHydrated: uiHydrated } = useUIStore();
+  const { currentPage, setPage, _hasHydrated: uiHydrated, showKeyboardShortcuts, setShowKeyboardShortcuts } = useUIStore();
   const { resumePollingIfNeeded, _hasHydrated: videoHydrated, isGeneratingScript, currentScript } = useVideoStore();
 
   useEffect(() => {
@@ -225,6 +226,10 @@ export default function App() {
     <div className="min-h-[480px] bg-slate-50 flex flex-col relative">
       <Header />
       <main className="flex-1 overflow-y-auto">{renderPage()}</main>
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
     </div>
   );
 }

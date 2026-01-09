@@ -79,19 +79,13 @@ export function useKeyboardShortcuts(handlers?: ShortcutHandlers) {
           handleEscape();
           break;
 
-        // ? - Show shortcuts help (future: implement help modal)
+        // ? - Show shortcuts help modal
         case '?':
           if (event.shiftKey) {
             event.preventDefault();
-            // TODO: Show shortcuts help modal
-            console.log('Keyboard shortcuts:', {
-              G: 'Generate video',
-              D: 'Download video',
-              H: 'Go to history',
-              R: 'Refresh product',
-              C: 'Go to credits',
-              Esc: 'Go back',
-            });
+            // Toggle keyboard shortcuts modal
+            const { showKeyboardShortcuts, setShowKeyboardShortcuts } = useUIStore.getState();
+            setShowKeyboardShortcuts(!showKeyboardShortcuts);
           }
           break;
       }

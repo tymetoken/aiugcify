@@ -17,8 +17,10 @@ type Page =
 interface UIState {
   currentPage: Page;
   _hasHydrated: boolean;
+  showKeyboardShortcuts: boolean;
   setPage: (page: Page) => void;
   setHasHydrated: (value: boolean) => void;
+  setShowKeyboardShortcuts: (show: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -26,8 +28,10 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       currentPage: 'dashboard',
       _hasHydrated: false,
+      showKeyboardShortcuts: false,
       setPage: (page) => set({ currentPage: page }),
       setHasHydrated: (value: boolean) => set({ _hasHydrated: value }),
+      setShowKeyboardShortcuts: (show) => set({ showKeyboardShortcuts: show }),
     }),
     {
       name: 'ui-storage',
