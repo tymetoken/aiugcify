@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useProductStore } from './store/productStore';
 import { useVideoStore } from './store/videoStore';
@@ -14,12 +14,13 @@ import { VideoReadyPage } from './pages/VideoReadyPage';
 import { CreditsPage } from './pages/CreditsPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { useUIStore } from './store/uiStore';
+import type { GenerateScriptResponse } from '@aiugcify/shared-types';
 
 export default function App() {
   const { isAuthenticated, initialize, isLoading: authLoading, isFirstLogin, refreshUser } = useAuthStore();
   const { checkCurrentTab, setScrapedProduct, _hasHydrated: productHydrated } = useProductStore();
   const { currentPage, setPage, _hasHydrated: uiHydrated } = useUIStore();
-  const { resumePollingIfNeeded, _hasHydrated: videoHydrated, isGeneratingScript } = useVideoStore();
+  const { resumePollingIfNeeded, _hasHydrated: videoHydrated, isGeneratingScript, currentScript } = useVideoStore();
 
   useEffect(() => {
     initialize();
@@ -80,12 +81,93 @@ export default function App() {
     }
   }, [videoHydrated, resumePollingIfNeeded]);
 
-  // Navigate to ProductPage if script generation is in progress (for popup reopen)
+  // Track previous authentication state to detect automatic sign-outs
+  const wasAuthenticated = useRef<boolean | null>(null);
+
+  // Navigate to dashboard when user is automatically signed out
   useEffect(() => {
-    if (videoHydrated && isGeneratingScript && currentPage !== 'product') {
-      setPage('product');
+    // Skip during initial load
+    if (authLoading) return;
+
+    // If user was authenticated but is now signed out, go to dashboard
+    if (wasAuthenticated.current === true && !isAuthenticated) {
+      setPage('dashboard');
     }
-  }, [videoHydrated, isGeneratingScript, currentPage, setPage]);
+
+    // Update the ref after processing
+    wasAuthenticated.current = isAuthenticated;
+  }, [isAuthenticated, authLoading, setPage]);
+
+  // Navigate based on script generation state (for popup reopen scenarios)
+  useEffect(() => {
+    if (!videoHydrated) return;
+
+    // If script generation is in progress, show ProductPage with progress overlay
+    if (isGeneratingScript && currentPage !== 'product') {
+      setPage('product');
+      return;
+    }
+
+    // If script generation completed (script exists, not generating), navigate to script-editor
+    // Only navigate if we're still on the product page (meaning we were waiting for generation)
+    if (!isGeneratingScript && currentScript && currentPage === 'product') {
+      setPage('script-editor');
+    }
+  }, [videoHydrated, isGeneratingScript, currentScript, currentPage, setPage]);
+
+  // Listen for storage changes from service worker (background script generation)
+  useEffect(() => {
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes['video-storage']) {
+        try {
+          const newValue = JSON.parse(changes['video-storage'].newValue || '{}');
+          const state = newValue.state || {};
+
+          // Sync script generation progress from background
+          const videoStore = useVideoStore.getState();
+
+          // Update script generation step for progress animation
+          if (state.scriptGenerationStep !== undefined && state.scriptGenerationStep !== videoStore.scriptGenerationStep) {
+            videoStore.setScriptGenerationStep(state.scriptGenerationStep);
+          }
+
+          // If script generation completed in background
+          if (state.currentScript && !state.isGeneratingScript && videoStore.isGeneratingScript) {
+            // Directly update store with completed script
+            useVideoStore.setState({
+              currentScript: state.currentScript as GenerateScriptResponse,
+              editedScript: state.currentScript.script,
+              isGeneratingScript: false,
+              isLoading: false,
+              scriptGenerationStep: 0,
+              error: state.error || null,
+            });
+            // Refresh user credits
+            refreshUser();
+            // Navigate to script editor to show the completed script
+            setPage('script-editor');
+          }
+
+          // If error occurred in background
+          if (state.error && !state.isGeneratingScript && videoStore.isGeneratingScript) {
+            useVideoStore.setState({
+              error: state.error,
+              isGeneratingScript: false,
+              isLoading: false,
+              scriptGenerationStep: 0,
+            });
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    };
+
+    chrome.storage.local.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.local.onChanged.removeListener(handleStorageChange);
+    };
+  }, [refreshUser, setPage]);
 
   // Wait for all stores to hydrate from Chrome storage
   const isHydrating = !uiHydrated || !videoHydrated || !productHydrated;

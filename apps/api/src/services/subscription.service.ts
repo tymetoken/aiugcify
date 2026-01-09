@@ -124,7 +124,8 @@ class SubscriptionService {
 
   async allocateMonthlyCredits(
     subscriptionId: string,
-    tx?: PrismaTransactionClient
+    tx?: PrismaTransactionClient,
+    invoiceId?: string
   ): Promise<void> {
     const client = tx || prisma;
 
@@ -173,7 +174,9 @@ class SubscriptionService {
       },
     });
 
-    // Create transaction record
+    // Create transaction record with invoice ID for idempotency tracking
+    const intervalLabel = subscription.interval === 'MONTHLY' ? 'Monthly' : 'Yearly';
+    const invoiceSuffix = invoiceId ? ` | Invoice: ${invoiceId}` : '';
     await client.creditTransaction.create({
       data: {
         userId: subscription.userId,
@@ -181,7 +184,7 @@ class SubscriptionService {
         status: 'COMPLETED',
         amount: credits,
         balanceAfter: newBalance,
-        description: `${subscription.plan.name} subscription - ${subscription.interval.toLowerCase()} credits`,
+        description: `${subscription.plan.name} (${intervalLabel}) subscription credits${invoiceSuffix}`,
       },
     });
 
@@ -194,13 +197,13 @@ class SubscriptionService {
           status: 'COMPLETED',
           amount: bonusCredits,
           balanceAfter: newBalance,
-          description: `${subscription.plan.name} yearly subscription bonus`,
+          description: `${subscription.plan.name} (Yearly) subscription bonus${invoiceSuffix}`,
         },
       });
     }
 
     logger.info(
-      { subscriptionId, userId: subscription.userId, credits, bonusCredits },
+      { subscriptionId, userId: subscription.userId, credits, bonusCredits, invoiceId },
       'Subscription credits allocated'
     );
   }

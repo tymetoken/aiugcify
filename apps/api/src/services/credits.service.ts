@@ -1,6 +1,5 @@
 import { prisma, type PrismaTransactionClient } from '../config/database.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
 import type { CreditPackage, CreditTransaction } from '@aiugcify/shared-types';
 import type { CreditPackage as PrismaCreditPackage, CreditTransaction as PrismaCreditTransaction } from '@prisma/client';
 

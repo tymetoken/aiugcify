@@ -7,8 +7,60 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Sophisticated slate-blue primary (muted, premium)
+        // Vibrant blue-violet primary (energetic, modern, trustworthy)
         primary: {
+          50: '#f5f3ff',
+          100: '#ede9fe',
+          200: '#ddd6fe',
+          300: '#c4b5fd',
+          400: '#a78bfa',
+          500: '#8b5cf6',
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+        },
+        // Bright coral accent (action, urgency, CTAs)
+        accent: {
+          50: '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#f97316',
+          600: '#ea580c',
+          700: '#c2410c',
+          800: '#9a3412',
+          900: '#7c2d12',
+        },
+        // Vibrant emerald success
+        success: {
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+        },
+        // Bright amber warning
+        warning: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+        },
+        // Clean slate neutrals
+        dark: {
           50: '#f8fafc',
           100: '#f1f5f9',
           200: '#e2e8f0',
@@ -19,58 +71,6 @@ export default {
           700: '#334155',
           800: '#1e293b',
           900: '#0f172a',
-        },
-        // Warm copper accent (subtle, elegant)
-        accent: {
-          50: '#fdf8f6',
-          100: '#f2e8e5',
-          200: '#eaddd7',
-          300: '#d6c4bb',
-          400: '#b8a89e',
-          500: '#9a8478',
-          600: '#846358',
-          700: '#6d534a',
-          800: '#5c463f',
-          900: '#4e3b36',
-        },
-        // Muted sage success
-        success: {
-          50: '#f6f7f6',
-          100: '#e3e7e3',
-          200: '#c7d0c7',
-          300: '#a3b2a3',
-          400: '#7d917d',
-          500: '#5f7260',
-          600: '#4a5b4b',
-          700: '#3d4a3e',
-          800: '#333d34',
-          900: '#2c332d',
-        },
-        // Soft amber warning
-        warning: {
-          50: '#fefcf3',
-          100: '#fdf6de',
-          200: '#fbedb8',
-          300: '#f8de88',
-          400: '#f3c957',
-          500: '#e9ae2e',
-          600: '#cc8a1f',
-          700: '#a9681c',
-          800: '#8a531e',
-          900: '#72451d',
-        },
-        // Refined neutral
-        dark: {
-          50: '#fafafa',
-          100: '#f4f4f5',
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa',
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46',
-          800: '#27272a',
-          900: '#18181b',
         },
       },
       fontFamily: {
@@ -86,8 +86,18 @@ export default {
         'scale-in': 'scaleIn 0.2s ease-out',
         'bounce-in': 'bounceIn 0.5s ease-out',
         'shimmer': 'shimmer 2s infinite',
+        'shimmer-slow': 'shimmer 5s ease-in-out infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
         'float': 'float 3s ease-in-out infinite',
+        'float-slow': 'floatSlow 8s ease-in-out infinite',
+        'float-slower': 'floatSlower 12s ease-in-out infinite',
+        'float-reverse': 'floatReverse 10s ease-in-out infinite',
+        'breathe': 'breathe 3s ease-in-out infinite',
+        'pulse-wave': 'pulseWave 1.5s ease-in-out infinite',
+        'shimmer-sweep': 'shimmerSweep 2.5s ease-in-out infinite',
+        'ripple': 'ripple 1.5s ease-out infinite',
+        'gradient-flow': 'gradientFlow 3s ease infinite',
+        'icon-pulse': 'iconPulse 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -117,12 +127,52 @@ export default {
           '100%': { backgroundPosition: '200% 0' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(100, 116, 139, 0.2)' },
-          '100%': { boxShadow: '0 0 15px rgba(100, 116, 139, 0.3)' },
+          '0%': { boxShadow: '0 0 5px rgba(139, 92, 246, 0.4)' },
+          '100%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.6)' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-5px)' },
+        },
+        floatSlow: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(15px, -20px) scale(1.05)' },
+          '66%': { transform: 'translate(-10px, 10px) scale(0.95)' },
+        },
+        floatSlower: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '25%': { transform: 'translate(-20px, 15px) scale(1.1)' },
+          '50%': { transform: 'translate(10px, -10px) scale(0.9)' },
+          '75%': { transform: 'translate(15px, 20px) scale(1.05)' },
+        },
+        floatReverse: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(-15px, 15px) scale(0.95)' },
+          '66%': { transform: 'translate(20px, -10px) scale(1.1)' },
+        },
+        breathe: {
+          '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+          '50%': { opacity: '0.8', transform: 'scale(1.08)' },
+        },
+        pulseWave: {
+          '0%, 100%': { transform: 'scale(1)', opacity: '0.6' },
+          '50%': { transform: 'scale(1.4)', opacity: '1' },
+        },
+        shimmerSweep: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        ripple: {
+          '0%': { transform: 'scale(0.8)', opacity: '1' },
+          '100%': { transform: 'scale(2.5)', opacity: '0' },
+        },
+        gradientFlow: {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        iconPulse: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.1)' },
         },
       },
       backgroundImage: {
@@ -131,11 +181,12 @@ export default {
         'mesh-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       },
       boxShadow: {
-        'glow': '0 0 15px rgba(100, 116, 139, 0.15)',
-        'glow-lg': '0 0 30px rgba(100, 116, 139, 0.2)',
-        'soft': '0 2px 15px rgba(0, 0, 0, 0.03)',
-        'soft-lg': '0 5px 30px rgba(0, 0, 0, 0.05)',
-        'inner-glow': 'inset 0 1px 1px rgba(255, 255, 255, 0.08)',
+        'glow': '0 0 20px rgba(139, 92, 246, 0.3)',
+        'glow-lg': '0 0 40px rgba(139, 92, 246, 0.4)',
+        'glow-accent': '0 0 20px rgba(249, 115, 22, 0.3)',
+        'soft': '0 2px 15px rgba(0, 0, 0, 0.05)',
+        'soft-lg': '0 5px 30px rgba(0, 0, 0, 0.08)',
+        'inner-glow': 'inset 0 1px 1px rgba(255, 255, 255, 0.1)',
       },
       backdropBlur: {
         xs: '2px',

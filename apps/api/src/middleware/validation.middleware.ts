@@ -85,6 +85,7 @@ export const schemas = {
         targetDuration: z.union([z.literal(15), z.literal(20), z.literal(25), z.literal(30)]).optional(),
         includeCallToAction: z.boolean().optional(),
         highlightFeatures: z.array(z.string()).optional(),
+        additionalNotes: z.string().max(500).optional(),
       })
       .optional(),
   }),
@@ -96,15 +97,15 @@ export const schemas = {
   // Credits schemas
   checkout: z.object({
     packageId: z.string().min(1),
-    successUrl: z.string().min(1).optional(),
-    cancelUrl: z.string().min(1).optional(),
+    successUrl: z.string().url('Invalid success URL').optional(),
+    cancelUrl: z.string().url('Invalid cancel URL').optional(),
   }),
 
   subscriptionCheckout: z.object({
     planId: z.string().min(1),
     interval: z.enum(['monthly', 'yearly']),
-    successUrl: z.string().min(1).optional(),
-    cancelUrl: z.string().min(1).optional(),
+    successUrl: z.string().url('Invalid success URL').optional(),
+    cancelUrl: z.string().url('Invalid cancel URL').optional(),
   }),
 
   changePlan: z.object({
@@ -121,5 +122,17 @@ export const schemas = {
   // ID param
   idParam: z.object({
     id: z.string().min(1),
+  }),
+
+  // Session ID param (Stripe checkout session)
+  sessionIdParam: z.object({
+    sessionId: z.string()
+      .min(1)
+      .regex(/^cs_(test_|live_)?[a-zA-Z0-9]+$/, 'Invalid Stripe session ID format'),
+  }),
+
+  // Invoice query with limit validation
+  invoiceQuery: z.object({
+    limit: z.coerce.number().int().positive().max(50).default(10),
   }),
 };

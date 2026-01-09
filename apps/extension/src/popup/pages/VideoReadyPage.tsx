@@ -122,7 +122,7 @@ export function VideoReadyPage() {
   };
 
   return (
-    <div className={`relative flex flex-col h-full animate-fade-in ${isPlaying ? 'bg-dark-900' : ''}`}>
+    <div className={`relative flex flex-col justify-center h-[480px] animate-fade-in ${isPlaying ? 'bg-dark-900' : ''}`}>
       {/* Close button when playing */}
       {isPlaying && (
         <button
@@ -135,16 +135,16 @@ export function VideoReadyPage() {
       )}
 
       {/* Video Player */}
-      <div className={`${isPlaying ? 'flex-1 flex items-center justify-center p-2' : 'p-4'}`}>
-        <div className={`relative bg-gradient-to-br from-dark-800 to-dark-900 rounded-2xl overflow-hidden shadow-soft-lg mx-auto transition-all duration-300 ${
-          isPlaying ? 'w-full max-w-[320px] h-auto' : 'aspect-[9/16] max-h-56'
+      <div className={`${isPlaying ? 'flex-1 flex items-center justify-center p-2' : 'px-4 pt-2'}`}>
+        <div className={`relative bg-gradient-to-br from-dark-800 to-dark-900 rounded-xl overflow-hidden shadow-soft-lg mx-auto transition-all duration-300 ${
+          isPlaying ? 'w-full max-w-[320px] h-auto' : 'aspect-[9/16] max-h-40'
         }`}>
           {/* Decorative glow */}
           {!isPlaying && (
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 rounded-2xl opacity-20 blur-xl" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 rounded-xl opacity-20 blur-xl" />
           )}
 
-          <div className="relative h-full rounded-2xl overflow-hidden">
+          <div className="relative h-full rounded-xl overflow-hidden">
             {isPlaying && videoUrl ? (
               <video
                 ref={videoRef}
@@ -166,15 +166,15 @@ export function VideoReadyPage() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <VideoIcon className="w-16 h-16 text-dark-600" />
+                    <VideoIcon className="w-12 h-12 text-dark-600" />
                   </div>
                 )}
                 <button
                   onClick={handlePlayClick}
                   className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors cursor-pointer group"
                 >
-                  <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:bg-white group-hover:scale-110 transition-all">
-                    <PlayIcon className="w-8 h-8 text-primary-600 ml-1" />
+                  <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:bg-white group-hover:scale-110 transition-all">
+                    <PlayIcon className="w-6 h-6 text-primary-600 ml-0.5" />
                   </div>
                 </button>
               </>
@@ -185,47 +185,47 @@ export function VideoReadyPage() {
 
       {/* Success Badge - Hidden when playing */}
       {!isPlaying && (
-        <div className="px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 rounded-full text-sm font-medium animate-bounce-in">
-            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-              <CheckIcon className="w-3 h-3 text-white" />
+        <div className="px-4 pt-3 text-center">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 rounded-full text-xs font-medium">
+            <div className="w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
+              <CheckIcon className="w-2 h-2 text-white" />
             </div>
             Video Ready!
           </div>
-          <h3 className="text-xl font-bold text-dark-800 mt-4">
+          <h3 className="text-base font-bold text-dark-800 mt-1.5">
             Your UGC Video is Complete
           </h3>
-          <p className="text-sm text-dark-500 mt-1 line-clamp-1">{currentVideo.productTitle}</p>
+          <p className="text-[11px] text-dark-500 mt-0.5 line-clamp-1">{currentVideo.productTitle}</p>
         </div>
       )}
 
       {/* Video Details - Hidden when playing */}
       {!isPlaying && (
-        <div className="px-4 mt-4">
-          <div className="glass rounded-2xl p-4 border border-dark-200/50">
-            <div className="grid grid-cols-3 gap-4">
+        <div className="px-4 pt-3">
+          <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
+            <div className="grid grid-cols-3 gap-2">
               <div className="text-center">
-                <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                  <ClockIcon className="w-5 h-5 text-primary-600" />
+                <div className="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-0.5">
+                  <ClockIcon className="w-3.5 h-3.5 text-primary-600" />
                 </div>
-                <p className="text-xs text-dark-400">Duration</p>
-                <p className="text-sm font-semibold text-dark-800">{currentVideo.videoDuration}s</p>
+                <p className="text-[9px] text-dark-400">Duration</p>
+                <p className="text-[11px] font-semibold text-dark-800">{currentVideo.videoDuration}s</p>
               </div>
               <div className="text-center">
-                <div className="w-10 h-10 bg-accent-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                  <SparkleIcon className="w-5 h-5 text-accent-600" />
+                <div className="w-7 h-7 bg-accent-100 rounded-lg flex items-center justify-center mx-auto mb-0.5">
+                  <SparkleIcon className="w-3.5 h-3.5 text-accent-600" />
                 </div>
-                <p className="text-xs text-dark-400">Style</p>
-                <p className="text-sm font-semibold text-dark-800 capitalize">
+                <p className="text-[9px] text-dark-400">Style</p>
+                <p className="text-[11px] font-semibold text-dark-800 capitalize">
                   {currentVideo.videoStyle.replace('_', ' ')}
                 </p>
               </div>
               <div className="text-center">
-                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                  <CalendarIcon className="w-5 h-5 text-green-600" />
+                <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-0.5">
+                  <CalendarIcon className="w-3.5 h-3.5 text-green-600" />
                 </div>
-                <p className="text-xs text-dark-400">Expires</p>
-                <p className="text-sm font-semibold text-dark-800">7 days</p>
+                <p className="text-[9px] text-dark-400">Expires</p>
+                <p className="text-[11px] font-semibold text-dark-800">7 days</p>
               </div>
             </div>
           </div>
@@ -234,18 +234,17 @@ export function VideoReadyPage() {
 
       {/* Actions */}
       {!isPlaying && (
-        <div className="p-4 mt-auto space-y-2">
+        <div className="px-4 pt-3 pb-2 space-y-2">
           <Button
             onClick={handleDownload}
             className="w-full"
-            size="lg"
             isLoading={isDownloading}
           >
-            <DownloadIcon className="w-5 h-5 mr-2" />
+            <DownloadIcon className="w-4 h-4 mr-2" />
             Download Video
           </Button>
-          <Button onClick={handleNewVideo} variant="secondary" className="w-full">
-            <PlusIcon className="w-5 h-5 mr-2" />
+          <Button onClick={handleNewVideo} variant="ghost" className="w-full">
+            <PlusIcon className="w-4 h-4 mr-2" />
             Create Another Video
           </Button>
         </div>

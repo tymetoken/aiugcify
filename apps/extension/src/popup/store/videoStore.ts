@@ -29,6 +29,7 @@ interface VideoState {
   // Actions
   setAdditionalNotes: (notes: string) => void;
   generateScript: (productData: ProductData, additionalNotes?: string) => Promise<void>;
+  generateScriptDirect: (productData: ProductData, additionalNotes?: string) => Promise<void>;
   updateScript: (script: string) => void;
   saveScript: () => Promise<void>;
   setSelectedStyle: (style: VideoStyle) => void;
@@ -43,6 +44,7 @@ interface VideoState {
   setHasHydrated: (value: boolean) => void;
   resumePollingIfNeeded: () => void;
   setScriptGenerationStep: (step: number) => void;
+  checkBackgroundGeneration: () => void;
 }
 
 export const useVideoStore = create<VideoState>()(
@@ -91,6 +93,71 @@ export const useVideoStore = create<VideoState>()(
           isGenerating: false,
           generationProgress: 0,
         });
+
+        try {
+          // Get API URL from environment
+          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+
+          // Delegate to service worker for background processing
+          // This continues even if popup is closed
+          chrome.runtime.sendMessage(
+            {
+              type: 'GENERATE_SCRIPT',
+              data: {
+                productData,
+                videoStyle: selectedStyle,
+                options: {
+                  tone: 'enthusiastic',
+                  targetDuration: 20,
+                  additionalNotes,
+                },
+                apiBaseUrl, // Pass API URL to service worker
+              },
+            },
+            (response) => {
+              if (chrome.runtime.lastError) {
+                // Service worker might not be ready, fallback to direct API call
+                console.warn('[VideoStore] Service worker error, using direct API call');
+                get().generateScriptDirect(productData, additionalNotes);
+                return;
+              }
+
+              if (response?.success && response.result) {
+                // Script generated successfully
+                set({
+                  currentScript: response.result as GenerateScriptResponse,
+                  editedScript: (response.result as GenerateScriptResponse).script,
+                  isLoading: false,
+                  isGeneratingScript: false,
+                  scriptGenerationStep: 0,
+                });
+                // Refresh user to update credit balance
+                useAuthStore.getState().refreshUser();
+              } else if (response?.error) {
+                set({
+                  error: response.error,
+                  isLoading: false,
+                  isGeneratingScript: false,
+                  scriptGenerationStep: 0,
+                });
+              }
+              // If no response, the popup was closed and storage will be updated by service worker
+            }
+          );
+        } catch (error) {
+          set({
+            error: (error as Error).message,
+            isLoading: false,
+            isGeneratingScript: false,
+            scriptGenerationStep: 0,
+          });
+          throw error;
+        }
+      },
+
+      // Fallback direct API call if service worker is unavailable
+      generateScriptDirect: async (productData: ProductData, additionalNotes?: string) => {
+        const { selectedStyle } = get();
 
         // Progress step 2 after a delay
         setTimeout(() => {
@@ -366,6 +433,36 @@ export const useVideoStore = create<VideoState>()(
       },
 
       clearError: () => set({ error: null }),
+
+      // Check if script generation is still running in background
+      checkBackgroundGeneration: () => {
+        chrome.runtime.sendMessage(
+          { type: 'CHECK_SCRIPT_GENERATION_STATUS' },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn('[VideoStore] Could not check background status');
+              return;
+            }
+
+            if (response?.isGenerating) {
+              // Generation is still in progress, ensure UI shows loading state
+              set({ isGeneratingScript: true, isLoading: true });
+            } else {
+              // Generation is not in progress
+              // Check if we have a completed script in storage that wasn't reflected in state
+              const { isGeneratingScript, currentScript } = get();
+              if (isGeneratingScript && currentScript) {
+                // Script was completed while popup was closed - refresh user credits
+                set({ isGeneratingScript: false, isLoading: false, scriptGenerationStep: 0 });
+                useAuthStore.getState().refreshUser();
+              } else if (isGeneratingScript && !currentScript) {
+                // Was generating but no script - might have failed, reset state
+                set({ isGeneratingScript: false, isLoading: false, scriptGenerationStep: 0 });
+              }
+            }
+          }
+        );
+      },
     }),
     {
       name: 'video-storage',
@@ -377,12 +474,18 @@ export const useVideoStore = create<VideoState>()(
         selectedStyle: state.selectedStyle,
         additionalNotes: state.additionalNotes,
         isGenerating: state.isGenerating,
-        // Note: isGeneratingScript and scriptGenerationStep are NOT persisted
-        // They are transient UI states that should reset when popup reopens
+        // Persist script generation state so popup can resume showing progress
+        isGeneratingScript: state.isGeneratingScript,
+        scriptGenerationStep: state.scriptGenerationStep,
         generationProgress: state.generationProgress,
+        error: state.error,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
+        // Check background generation status when popup reopens
+        setTimeout(() => {
+          state?.checkBackgroundGeneration();
+        }, 100);
       },
     }
   )

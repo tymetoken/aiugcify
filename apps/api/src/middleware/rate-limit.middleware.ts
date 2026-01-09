@@ -29,11 +29,11 @@ const createStore = () => {
 // General API rate limit
 export const apiRateLimit = rateLimit({
   windowMs: parseInt(config.RATE_LIMIT_WINDOW_MS, 10),
-  max: isDevelopment ? 1000 : parseInt(config.RATE_LIMIT_MAX_REQUESTS, 10), // Higher limit in dev, but still enforced
+  max: isDevelopment ? 10000 : parseInt(config.RATE_LIMIT_MAX_REQUESTS, 10), // Very high limit in dev
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
-  // SECURITY: Rate limiting is always enforced, even in development
+  skip: isDevelopment ? () => true : undefined, // Skip entirely in development
   message: {
     success: false,
     error: {
@@ -42,20 +42,22 @@ export const apiRateLimit = rateLimit({
     },
   },
   keyGenerator: (req) => {
-    // Use user ID if authenticated, otherwise IP
+    // Use user ID if authenticated, otherwise IP with fallback to forwarded header
     const user = (req as { user?: { id: string } }).user;
-    return user?.id || req.ip || 'unknown';
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'anonymous';
+    return user?.id || (Array.isArray(ip) ? ip[0] : ip);
   },
 });
 
 // Stricter limit for auth endpoints (prevent brute force)
-// SECURITY: Always enforced to prevent credential stuffing attacks
+// SECURITY: Always enforced in production to prevent credential stuffing attacks
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100, // 1000 in dev, 100 in prod per 15 min
+  max: isDevelopment ? 10000 : 100, // Very high in dev, 100 in prod per 15 min
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
+  skip: isDevelopment ? () => true : undefined, // Skip in development
   skipSuccessfulRequests: true,
   message: {
     success: false,
@@ -104,6 +106,27 @@ export const scriptGenerationRateLimit = rateLimit({
     error: {
       code: ErrorCodes.RATE_LIMIT_EXCEEDED,
       message: 'Script generation rate limit exceeded, please try again later',
+    },
+  },
+});
+
+// Stricter limit for payment/checkout endpoints
+// SECURITY: Prevents creation of excessive Stripe sessions and probing attacks
+export const paymentRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: isDevelopment ? 100 : 15, // 15 checkout attempts per hour in production
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createStore(),
+  keyGenerator: (req) => {
+    const user = (req as { user?: { id: string } }).user;
+    return user?.id || req.ip || 'unknown';
+  },
+  message: {
+    success: false,
+    error: {
+      code: ErrorCodes.RATE_LIMIT_EXCEEDED,
+      message: 'Too many payment requests, please try again later',
     },
   },
 });

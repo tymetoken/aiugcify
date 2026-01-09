@@ -10,7 +10,7 @@ import { LoginModal } from '../components/LoginModal';
 export function DashboardPage() {
   const { isOnProductPage, scrapedProduct, scrapeCurrentPage, isLoading } = useProductStore();
   const { setPage } = useUIStore();
-  const { setAdditionalNotes } = useVideoStore();
+  const { setAdditionalNotes, reset: resetVideoStore } = useVideoStore();
   const { user, isAuthenticated } = useAuthStore();
   const previousProductUrl = useRef<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -40,8 +40,8 @@ export function DashboardPage() {
       return;
     }
 
-    // Clear notes when starting fresh generation
-    setAdditionalNotes('');
+    // Clear old video/script state when starting fresh generation
+    resetVideoStore();
 
     if (!scrapedProduct) {
       await scrapeCurrentPage();
@@ -60,33 +60,33 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="p-4 space-y-4 animate-fade-in min-h-full">
+    <div className="px-4 py-3 space-y-3 animate-fade-in min-h-full flex flex-col">
       {/* Status Card */}
       <div
-        className={`rounded-2xl p-4 transition-all duration-300 ${
+        className={`rounded-xl p-3 transition-all duration-300 ${
           isOnProductPage
             ? 'bg-success-50/80 border border-success-200/50'
             : 'bg-white border border-dark-200/50 shadow-sm'
         }`}
       >
-        <div className="flex items-start gap-3.5">
+        <div className="flex items-center gap-3">
           <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+            className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
               isOnProductPage
                 ? 'bg-success-500 shadow-sm'
                 : 'bg-dark-100'
             }`}
           >
             {isOnProductPage ? (
-              <CheckIcon className="w-6 h-6 text-white animate-scale-in" />
+              <CheckIcon className="w-5 h-5 text-white animate-scale-in" />
             ) : (
-              <SearchIcon className="w-5 h-5 text-dark-400" />
+              <SearchIcon className="w-4 h-4 text-dark-400" />
             )}
           </div>
-          <div className="flex-1 pt-0.5">
+          <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3
-                className={`font-semibold text-base ${
+                className={`font-semibold text-sm ${
                   isOnProductPage ? 'text-success-700' : 'text-dark-700'
                 }`}
               >
@@ -98,7 +98,7 @@ export function DashboardPage() {
                 </span>
               )}
             </div>
-            <p className={`text-sm mt-0.5 ${isOnProductPage ? 'text-success-600/70' : 'text-dark-500'}`}>
+            <p className={`text-xs ${isOnProductPage ? 'text-success-600/70' : 'text-dark-500'}`}>
               {isOnProductPage
                 ? 'Ready to generate a UGC video'
                 : 'Navigate to any TikTok Shop product page'}
@@ -109,31 +109,31 @@ export function DashboardPage() {
 
       {/* Product Preview */}
       {scrapedProduct && (
-        <div className="animate-fade-in-up rounded-2xl bg-white border border-dark-200/50 shadow-sm overflow-hidden">
+        <div className="animate-fade-in-up rounded-xl bg-white border border-dark-200/50 shadow-sm overflow-hidden">
           {/* Header with label and refresh */}
-          <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/50 border-b border-dark-100/50">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 border-b border-dark-100/50">
+            <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-              <span className="text-xs font-medium text-dark-500 uppercase tracking-wide">Selected Product</span>
+              <span className="text-[11px] font-medium text-dark-500 uppercase tracking-wide">Selected Product</span>
             </div>
             <button
               onClick={scrapeCurrentPage}
               disabled={isLoading}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-dark-400 hover:text-primary-600 hover:bg-white rounded-md transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-dark-400 hover:text-primary-600 hover:bg-white rounded transition-colors disabled:opacity-50"
               title="Refresh product data"
             >
-              <RefreshIcon className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshIcon className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
           </div>
 
           {/* Product Content */}
-          <div className="p-4">
-            <div className="flex gap-4">
+          <div className="p-3">
+            <div className="flex gap-3">
               {/* Product Image */}
               {scrapedProduct.images[0] && (
                 <div className="relative flex-shrink-0">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 shadow-sm">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100 shadow-sm">
                     <img
                       src={scrapedProduct.images[0]}
                       alt={scrapedProduct.title}
@@ -141,7 +141,7 @@ export function DashboardPage() {
                     />
                   </div>
                   {scrapedProduct.discount && (
-                    <div className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 bg-accent-500 text-white text-[10px] font-bold rounded-md shadow-sm">
+                    <div className="absolute -top-1 -right-1 px-1 py-0.5 bg-accent-500 text-white text-[9px] font-bold rounded shadow-sm">
                       {scrapedProduct.discount.replace('off', '').replace(/\s+/g, '').trim()}
                     </div>
                   )}
@@ -150,18 +150,18 @@ export function DashboardPage() {
 
               {/* Product Details */}
               <div className="flex-1 min-w-0 flex flex-col justify-between">
-                <h4 className="font-semibold text-dark-800 text-sm line-clamp-2 leading-snug">
+                <h4 className="font-semibold text-dark-800 text-xs line-clamp-2 leading-snug">
                   {scrapedProduct.title}
                 </h4>
 
-                <div className="mt-2 space-y-1.5">
+                <div className="mt-1.5 space-y-1">
                   {/* Price Row */}
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-bold text-dark-900">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-base font-bold text-dark-900">
                       {scrapedProduct.price}
                     </span>
                     {scrapedProduct.originalPrice && scrapedProduct.originalPrice !== scrapedProduct.price && (
-                      <span className="text-sm text-dark-400 line-through">
+                      <span className="text-xs text-dark-400 line-through">
                         {scrapedProduct.originalPrice}
                       </span>
                     )}
@@ -169,12 +169,12 @@ export function DashboardPage() {
 
                   {/* Rating Row */}
                   {scrapedProduct.rating && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <StarIcon
                             key={i}
-                            className={`w-3.5 h-3.5 ${
+                            className={`w-3 h-3 ${
                               i < Math.floor(parseFloat(String(scrapedProduct.rating || '0')))
                                 ? 'text-warning-400 fill-warning-400'
                                 : 'text-dark-200 fill-dark-200'
@@ -182,7 +182,7 @@ export function DashboardPage() {
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-medium text-dark-500">{scrapedProduct.rating}</span>
+                      <span className="text-[11px] font-medium text-dark-500">{scrapedProduct.rating}</span>
                     </div>
                   )}
                 </div>
@@ -194,24 +194,22 @@ export function DashboardPage() {
 
       {/* No Credits Notice */}
       {isAuthenticated && !hasCredits && (
-        <div className="rounded-2xl bg-warning-50/80 border border-warning-200/50 p-4 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-warning-500 rounded-xl flex items-center justify-center flex-shrink-0">
-              <CreditEmptyIcon className="w-5 h-5 text-white" />
+        <div className="rounded-lg bg-warning-50/80 border border-warning-200/50 px-2.5 py-2 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-warning-500 rounded-md flex items-center justify-center flex-shrink-0">
+              <CreditEmptyIcon className="w-3.5 h-3.5 text-white" />
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-dark-800">Out of Credits</p>
-              <p className="text-sm text-dark-500 mt-0.5">
-                Upgrade to continue creating videos
-              </p>
-              <button
-                onClick={() => setPage('credits')}
-                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
-              >
-                <span>View plans</span>
-                <ArrowRightIcon className="w-3.5 h-3.5" />
-              </button>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-dark-800 text-xs">Out of Credits</p>
+              <p className="text-[11px] text-dark-500">Upgrade to continue creating</p>
             </div>
+            <button
+              onClick={() => setPage('credits')}
+              className="flex items-center gap-1 text-[11px] font-medium text-primary-600 hover:text-primary-700 transition-colors whitespace-nowrap"
+            >
+              <span>View plans</span>
+              <ArrowRightIcon className="w-2.5 h-2.5" />
+            </button>
           </div>
         </div>
       )}
@@ -249,27 +247,27 @@ export function DashboardPage() {
       </Button>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5 mt-auto">
         <button
           onClick={() => setPage('history')}
-          className="group rounded-xl p-3.5 text-left bg-white border border-dark-200/50 hover:border-primary-300 shadow-sm hover:shadow transition-all"
+          className="group rounded-xl p-3 text-left bg-white border border-dark-200/50 hover:border-primary-300 shadow-sm hover:shadow transition-all"
         >
-          <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center mb-2.5 group-hover:bg-primary-100 transition-colors">
-            <VideoIcon className="w-5 h-5 text-primary-600" />
+          <div className="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary-100 transition-colors">
+            <VideoIcon className="w-4.5 h-4.5 text-primary-600" />
           </div>
           <p className="text-sm font-semibold text-dark-800">My Videos</p>
-          <p className="text-xs text-dark-400 mt-0.5">View history</p>
+          <p className="text-[11px] text-dark-400">View history</p>
         </button>
 
         <button
           onClick={() => setPage('credits')}
-          className="group rounded-xl p-3.5 text-left bg-white border border-dark-200/50 hover:border-accent-300 shadow-sm hover:shadow transition-all"
+          className="group rounded-xl p-3 text-left bg-white border border-dark-200/50 hover:border-accent-300 shadow-sm hover:shadow transition-all"
         >
-          <div className="w-10 h-10 bg-accent-50 rounded-lg flex items-center justify-center mb-2.5 group-hover:bg-accent-100 transition-colors">
-            <CreditIcon className="w-5 h-5 text-accent-600" />
+          <div className="w-9 h-9 bg-accent-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-accent-100 transition-colors">
+            <CreditIcon className="w-4.5 h-4.5 text-accent-600" />
           </div>
           <p className="text-sm font-semibold text-dark-800">Credits</p>
-          <p className="text-xs text-dark-400 mt-0.5">Plans & pricing</p>
+          <p className="text-[11px] text-dark-400">Plans & pricing</p>
         </button>
       </div>
 
@@ -321,18 +319,19 @@ function SparkleIcon({ className }: { className?: string }) {
 
 function VideoIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-      <path d="M10 8l6 4-6 4V8z" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>
   );
 }
 
 function CreditIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8M12 18V6" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3L14.5 9.5L21 12L14.5 14.5L12 21L9.5 14.5L3 12L9.5 9.5L12 3Z" />
     </svg>
   );
 }

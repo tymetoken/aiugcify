@@ -500,15 +500,15 @@ export function CreditsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium opacity-80">Your Current Plan</p>
-                  <p className="text-lg font-bold">{subscription.plan.name}</p>
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-medium">
-                      {monthlyAllocation} videos/month
-                    </p>
-                    <p className="text-xs opacity-80">
-                      {subscription.creditsRemaining} remaining{isYearlyPlan ? ' this year' : ' this month'} • {isYearlyPlan ? 'Yearly' : 'Monthly'} billing
-                    </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-lg font-bold">{subscription.plan.name}</p>
+                    <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-full">
+                      {isYearlyPlan ? 'Yearly' : 'Monthly'}
+                    </span>
                   </div>
+                  <p className="text-sm font-medium mt-1">
+                    {monthlyAllocation} videos/month
+                  </p>
                 </div>
                 <div className="text-right">
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
@@ -557,8 +557,8 @@ export function CreditsPage() {
           </div>
         </div>
 
-        {/* Subscription Plans */}
-        <div className="space-y-4 pt-2">
+        {/* Subscription Plans - Compact Design */}
+        <div className="space-y-3 pt-2">
           {subscriptionPlans.map((plan) => {
             const isYearly = billingInterval === 'yearly';
             const price = isYearly
@@ -578,25 +578,28 @@ export function CreditsPage() {
             // Tier-specific colors
             const tierStyles = {
               basic: {
-                bg: 'bg-gradient-to-br from-amber-50 to-orange-50',
-                border: 'border-amber-500',
+                bg: 'bg-gradient-to-br from-amber-50/80 to-orange-50/80',
+                border: 'border-amber-400',
                 shadow: 'shadow-amber-500/20',
                 text: 'text-amber-700',
                 icon: '🥉',
+                pill: 'bg-amber-100 text-amber-700',
               },
               standard: {
-                bg: 'bg-gradient-to-br from-slate-100 to-slate-50',
+                bg: 'bg-gradient-to-br from-slate-50 to-slate-100/80',
                 border: 'border-slate-400',
                 shadow: 'shadow-slate-400/20',
                 text: 'text-slate-600',
                 icon: '🥈',
+                pill: 'bg-slate-100 text-slate-700',
               },
               premium: {
-                bg: 'bg-gradient-to-br from-yellow-50 to-amber-50',
-                border: 'border-yellow-500',
+                bg: 'bg-gradient-to-br from-yellow-50/80 to-amber-50/80',
+                border: 'border-yellow-400',
                 shadow: 'shadow-yellow-500/20',
                 text: 'text-yellow-700',
                 icon: '🥇',
+                pill: 'bg-yellow-100 text-yellow-700',
               },
             };
             const tierStyle = tierStyles[plan.id as keyof typeof tierStyles] || tierStyles.basic;
@@ -606,23 +609,18 @@ export function CreditsPage() {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl overflow-hidden transition-all duration-200 ${
+                className={`relative rounded-xl overflow-hidden transition-all duration-200 ${
                   isCurrentWithSameInterval
                     ? `border-2 ${tierStyle.border} shadow-lg ${tierStyle.shadow}`
                     : isPopular
-                      ? 'border-2 border-primary-400 shadow-xl shadow-primary-500/20 hover:shadow-2xl'
-                      : 'border border-slate-200 hover:border-slate-300 hover:shadow-lg'
+                      ? 'border-2 border-primary-400 shadow-lg shadow-primary-500/20 hover:shadow-xl'
+                      : 'border border-slate-200 hover:border-slate-300 hover:shadow-md'
                 }`}
               >
-                {/* Badge */}
-                {isPopular && !isCurrentWithSameInterval && !(hasActiveSubscription && canChange) && (
-                  <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white text-xs font-bold px-4 py-1.5 text-center">
-                    ✨ MOST POPULAR
-                  </div>
-                )}
-                {hasActiveSubscription && canChange && changeType === 'upgrade' && (
-                  <div className="bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-bold px-4 py-1.5 text-center">
-                    ⬆️ UPGRADE
+                {/* Compact Badge - Only for Most Popular and Current Plan */}
+                {isPopular && !isCurrentWithSameInterval && (
+                  <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white text-[10px] font-bold px-3 py-1 text-center uppercase tracking-wide">
+                    Most Popular
                   </div>
                 )}
                 {isCurrentWithSameInterval && (
@@ -630,100 +628,79 @@ export function CreditsPage() {
                     plan.id === 'basic' ? 'from-amber-500 to-orange-500' :
                     plan.id === 'standard' ? 'from-slate-500 to-slate-600' :
                     'from-yellow-500 to-amber-500'
-                  } text-white text-xs font-bold px-4 py-1.5 text-center`}>
-                    {tierStyle.icon} CURRENT PLAN
+                  } text-white text-[10px] font-bold px-3 py-1 text-center uppercase tracking-wide`}>
+                    Current Plan
                   </div>
                 )}
 
-                <div className={`p-4 ${isCurrentWithSameInterval ? tierStyle.bg : 'bg-white'}`}>
-                  {/* Plan Header */}
-                  <div className="flex items-center justify-between mb-3">
+                <div className={`p-3 ${isCurrentWithSameInterval ? tierStyle.bg : 'bg-white'}`}>
+                  {/* Header: Icon + Name + Price */}
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{tierStyle.icon}</span>
-                      <h3 className="text-lg font-bold text-slate-800">{plan.name}</h3>
+                      <span className="text-lg">{tierStyle.icon}</span>
+                      <h3 className="text-base font-bold text-slate-800">{plan.name}</h3>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-bold text-slate-800">${price}</span>
+                      <span className="text-xs text-slate-500">/mo</span>
                     </div>
                   </div>
 
-                  {/* Pricing Section */}
-                  <div className={`rounded-xl p-3 mb-3 ${isCurrentWithSameInterval ? 'bg-white/60' : 'bg-slate-50'}`}>
-                    <div className="flex items-baseline justify-between">
-                      <div>
-                        <span className="text-2xl font-bold text-slate-800">${price}</span>
-                        <span className="text-sm text-slate-500">/month</span>
-                      </div>
-                      {isYearly && (
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-slate-700">${yearlyTotal}/year</p>
-                          <p className="text-xs text-green-600 font-medium">Save ${savings}</p>
-                        </div>
-                      )}
-                    </div>
+                  {/* Metrics Row */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${tierStyle.pill}`}>
+                      {plan.monthlyCredits} videos/mo
+                    </span>
+                    <span className="text-[11px] text-green-600 font-semibold">
+                      ${pricePerVideo}/video
+                    </span>
                   </div>
 
-                  {/* Features */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-sm text-slate-600">
-                        <strong className="text-slate-800">{plan.monthlyCredits}</strong> videos per month
-                      </span>
+                  {/* Yearly Info */}
+                  {isYearly && (
+                    <div className="flex items-center justify-between mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2">
+                      <span>{totalVideos} videos/year • ${yearlyTotal}/yr</span>
+                      <span className="text-green-600 font-semibold">Save ${savings}</span>
                     </div>
-                    {isYearly && (
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="text-sm text-slate-600">
-                          <strong className="text-slate-800">{totalVideos}</strong> videos total/year
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-sm text-slate-600">
-                        Only <strong className="text-green-600">${pricePerVideo}</strong> per video
-                      </span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Action Button */}
-                  {isCurrentWithSameInterval ? (
-                    <button
-                      onClick={() => setShowCancelModal(true)}
-                      className="w-full py-2.5 text-xs text-slate-400 hover:text-red-500 transition-colors"
-                    >
-                      Cancel subscription
-                    </button>
-                  ) : canChange ? (
-                    <button
-                      onClick={() => setChangePlanTarget(plan)}
-                      disabled={purchasingId === plan.id}
-                      className={`w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
-                        changeType === 'upgrade'
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md'
-                          : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {changeType === 'upgrade' ? 'Upgrade to ' + plan.name : 'Switch to ' + plan.name}
-                    </button>
-                  ) : (
-                    <Button
-                      onClick={() => handleSubscribe(plan.id)}
-                      variant={isPopular ? 'primary' : 'outline'}
-                      className={`w-full ${
-                        isPopular
-                          ? 'bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 shadow-md text-white font-semibold'
-                          : ''
-                      }`}
-                      isLoading={purchasingId === plan.id}
-                    >
-                      {isPopular ? 'Get Started' : 'Choose Plan'}
-                    </Button>
-                  )}
+                  <div className="mt-3">
+                    {isCurrentWithSameInterval ? (
+                      <button
+                        onClick={() => setShowCancelModal(true)}
+                        className="w-full py-1.5 text-[11px] text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        Cancel subscription
+                      </button>
+                    ) : canChange ? (
+                      <button
+                        onClick={() => setChangePlanTarget(plan)}
+                        disabled={purchasingId === plan.id}
+                        className={`w-full py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                          changeType === 'upgrade'
+                            ? 'border border-green-300 text-green-600 hover:bg-green-50'
+                            : 'border border-slate-200 text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        {changeType === 'upgrade' ? 'Upgrade to ' + plan.name : 'Switch to ' + plan.name}
+                      </button>
+                    ) : (
+                      <Button
+                        onClick={() => handleSubscribe(plan.id)}
+                        variant={isPopular ? 'primary' : 'outline'}
+                        size="sm"
+                        className={`w-full ${
+                          isPopular
+                            ? 'bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 shadow-sm text-white font-semibold'
+                            : ''
+                        }`}
+                        isLoading={purchasingId === plan.id}
+                      >
+                        {isPopular ? 'Get Started' : 'Choose Plan'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

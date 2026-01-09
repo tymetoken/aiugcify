@@ -57,13 +57,19 @@ export function ProductPage() {
   const { setPage } = useUIStore();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Navigate to script-editor when script is ready
+  // Navigate to script-editor only when a NEW script generation completes
   useEffect(() => {
-    if (currentScript && !isGeneratingScript) {
+    if (isGeneratingScript) {
+      // Mark that we started generating
+      setIsGenerating(true);
+    } else if (isGenerating && currentScript) {
+      // Generation just completed with a script - navigate
+      setIsGenerating(false);
       setPage('script-editor');
     }
-  }, [currentScript, isGeneratingScript, setPage]);
+  }, [currentScript, isGeneratingScript, isGenerating, setPage]);
 
   const handleGenerateScript = async () => {
     if (!scrapedProduct) return;
@@ -235,7 +241,8 @@ export function ProductPage() {
           size="lg"
           isLoading={isLoading}
         >
-          Generate Script (1 Credit)
+          <SendIcon className="w-4 h-4 mr-2" />
+          Submit (1 Credit)
         </Button>
         <Button
           onClick={() => setPage('dashboard')}
@@ -353,6 +360,14 @@ function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
       <path d="M5 12l5 5L20 7" />
+    </svg>
+  );
+}
+
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
     </svg>
   );
 }

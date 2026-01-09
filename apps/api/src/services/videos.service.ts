@@ -161,12 +161,13 @@ class VideosService {
       }
     }
 
-    // Update status
+    // Update status - set to GENERATING immediately since job was successfully queued
     const updated = await prisma.video.update({
       where: { id: videoId },
       data: {
-        status: useDirectProcessing ? 'GENERATING' : 'QUEUED',
+        status: 'GENERATING',
         finalScript,
+        generationStartedAt: new Date(),
       },
     });
 
@@ -184,7 +185,7 @@ class VideosService {
         logger.error({ videoId, error: err }, 'Direct video processing error');
       });
     } else {
-      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video queued for generation');
+      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video generation started');
     }
 
     return this.mapToVideo(updated);
@@ -353,9 +354,10 @@ class VideosService {
     const updated = await prisma.video.update({
       where: { id: videoId },
       data: {
-        status: useDirectProcessing ? 'GENERATING' : 'QUEUED',
+        status: 'GENERATING',
         errorMessage: null,
         errorCode: null,
+        generationStartedAt: new Date(),
       },
     });
 
@@ -372,7 +374,7 @@ class VideosService {
         logger.error({ videoId, error: err }, 'Direct video retry processing error');
       });
     } else {
-      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video retry queued');
+      logger.info({ videoId, userId, hasProductImage: !!productImageUrl }, 'Video retry started');
     }
 
     return this.mapToVideo(updated);

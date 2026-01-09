@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=800">
+  <title>Screenshot 4 - Pricing & Credits</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+    }
+
+    .browser-frame {
+      width: 100%;
+      height: 100%;
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+    }
+
+    /* Browser toolbar */
+    .toolbar {
+      height: 48px;
+      background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .control.close { background: #ff5f56; }
+    .control.minimize { background: #ffbd2e; }
+    .control.maximize { background: #27ca3f; }
+
+    .address-bar {
+      flex: 1;
+      max-width: 600px;
+      height: 32px;
+      background: #1a1a1a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      margin-left: 60px;
+    }
+
+    .lock-icon {
+      color: #27ca3f;
+      font-size: 12px;
+    }
+
+    .url {
+      color: #888;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .url span {
+      color: #fff;
+    }
+
+    .extension-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+      margin-left: auto;
+    }
+
+    /* Main content area */
+    .content-area {
+      height: calc(100% - 48px);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Background */
+    .bg-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%);
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.3;
+    }
+
+    .bg-orb-1 {
+      width: 500px;
+      height: 500px;
+      background: #667eea;
+      top: -150px;
+      left: 20%;
+    }
+
+    .bg-orb-2 {
+      width: 400px;
+      height: 400px;
+      background: #f093fb;
+      bottom: -100px;
+      right: 20%;
+    }
+
+    /* Pricing container */
+    .pricing-container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .pricing-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .pricing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(102, 126, 234, 0.2);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 16px;
+    }
+
+    .pricing-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .pricing-title span {
+      background: linear-gradient(135deg, #667eea 0%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pricing-subtitle {
+      font-size: 16px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* Pricing cards */
+    .pricing-cards {
+      display: flex;
+      gap: 24px;
+    }
+
+    .pricing-card {
+      width: 280px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 20px;
+      padding: 28px;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease;
+    }
+
+    .pricing-card.popular {
+      transform: scale(1.05);
+      background: #fff;
+      box-shadow:
+        0 25px 80px rgba(102,126,234,0.4),
+        0 0 0 2px #667eea;
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .plan-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .plan-price {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .plan-price span {
+      font-size: 16px;
+      font-weight: 500;
+      color: #666;
+    }
+
+    .plan-credits {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .plan-credits strong {
+      color: #667eea;
+    }
+
+    .card-features {
+      list-style: none;
+      margin-bottom: 24px;
+    }
+
+    .card-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
+    .check-icon {
+      width: 18px;
+      height: 18px;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #10b981;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .card-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .card-btn.primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 6px 20px rgba(102,126,234,0.3);
+    }
+
+    .card-btn.secondary {
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    /* Savings tag */
+    .savings-tag {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    /* Feature callout */
+    .callout {
+      position: absolute;
+      top: 100px;
+      left: 60px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+      max-width: 180px;
+    }
+
+    .callout-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .callout-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .callout-desc {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    /* Trust badges */
+    .trust-badges {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 24px;
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .trust-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    /* Highlight box */
+    .highlight-box {
+      position: absolute;
+      bottom: 40px;
+      right: 60px;
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 20px 28px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .highlight-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .highlight-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .highlight-text strong {
+      color: white;
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="browser-frame">
+    <div class="toolbar">
+      <div class="window-controls">
+        <div class="control close"></div>
+        <div class="control minimize"></div>
+        <div class="control maximize"></div>
+      </div>
+      <div class="address-bar">
+        <span class="lock-icon">&#128274;</span>
+        <span class="url">shop.tiktok.com/view/product/<span>premium-led-mask</span></span>
+      </div>
+      <div class="extension-icon">AI</div>
+    </div>
+
+    <div class="content-area">
+      <div class="bg-gradient">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+      </div>
+
+      <div class="pricing-container">
+        <div class="pricing-header">
+          <div class="pricing-badge">
+            &#10024; Choose Your Plan
+          </div>
+          <h1 class="pricing-title">Simple, <span>Transparent</span> Pricing</h1>
+          <p class="pricing-subtitle">Start creating viral UGC videos today</p>
+        </div>
+
+        <div class="pricing-cards">
+          <!-- Starter Plan -->
+          <div class="pricing-card">
+            <div class="card-header">
+              <div class="plan-name">Starter</div>
+              <div class="plan-price">$9<span>/mo</span></div>
+              <div class="plan-credits"><strong>10 credits</strong> per month</div>
+            </div>
+            <ul class="card-features">
+              <li>
+                <span class="check-icon">&#10003;</span>
+                AI Script Generation
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                HD Video Output
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                TikTok Integration
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Email Support
+              </li>
+            </ul>
+            <button class="card-btn secondary">Get Started</button>
+          </div>
+
+          <!-- Pro Plan (Popular) -->
+          <div class="pricing-card popular">
+            <div class="popular-badge">Most Popular</div>
+            <div class="card-header">
+              <div class="plan-name">Pro</div>
+              <div class="plan-price">$29<span>/mo</span></div>
+              <div class="plan-credits"><strong>50 credits</strong> per month</div>
+            </div>
+            <ul class="card-features">
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Everything in Starter
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Priority Generation
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Advanced Styles
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Priority Support
+              </li>
+            </ul>
+            <button class="card-btn primary">Get Started</button>
+          </div>
+
+          <!-- Business Plan -->
+          <div class="pricing-card">
+            <div class="savings-tag">Save 20%</div>
+            <div class="card-header">
+              <div class="plan-name">Business</div>
+              <div class="plan-price">$79<span>/mo</span></div>
+              <div class="plan-credits"><strong>200 credits</strong> per month</div>
+            </div>
+            <ul class="card-features">
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Everything in Pro
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Bulk Generation
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                API Access
+              </li>
+              <li>
+                <span class="check-icon">&#10003;</span>
+                Dedicated Support
+              </li>
+            </ul>
+            <button class="card-btn secondary">Get Started</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature callout -->
+      <div class="callout">
+        <div class="callout-icon">&#128176;</div>
+        <div class="callout-title">Pay As You Go</div>
+        <div class="callout-desc">Need more credits? Buy credit packs anytime</div>
+      </div>
+
+      <!-- Trust badges -->
+      <div class="trust-badges">
+        <div class="trust-badge">
+          <span class="trust-icon">&#128274;</span>
+          Secure Payments
+        </div>
+        <div class="trust-badge">
+          <span class="trust-icon">&#9889;</span>
+          Cancel Anytime
+        </div>
+        <div class="trust-badge">
+          <span class="trust-icon">&#10003;</span>
+          No Hidden Fees
+        </div>
+      </div>
+
+      <!-- Highlight box -->
+      <div class="highlight-box">
+        <span class="highlight-number">4</span>
+        <span class="highlight-text">
+          <strong>Flexible Plans</strong>
+          Scale your content creation as you grow
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

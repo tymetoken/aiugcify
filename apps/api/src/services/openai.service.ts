@@ -907,9 +907,9 @@ Generate a complete 10-second TikTok UGC video prompt optimized for Sora 2 gener
   }): string {
     let script = '';
 
-    // Add master prompt at the top
+    // Add master prompt at the top (without header label)
     if (parsed.masterSora2Prompt) {
-      script += `MASTER SORA 2 PROMPT:\n${parsed.masterSora2Prompt}\n\n`;
+      script += `${parsed.masterSora2Prompt}\n\n`;
     }
 
     script += '---SCRIPT START---\n\n';

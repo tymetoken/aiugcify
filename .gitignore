@@ -49,5 +49,12 @@ temp/
 *.timestamp-*.mjs
 test-checkout.js
 
+# Development/maintenance scripts (contain hardcoded test data)
+apps/api/scripts/
+
+# Build artifacts
+aiugcify-extension.zip
+.playwright-mcp/
+
 # Windows reserved names
 nul

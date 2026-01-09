@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=800">
+  <title>Screenshot 2 - Script Editor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 40px;
+      position: relative;
+    }
+
+    /* Background effects */
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .bg-orb-1 {
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      top: -100px;
+      left: -100px;
+    }
+
+    .bg-orb-2 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      bottom: -50px;
+      right: -50px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .back-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+    }
+
+    .page-title {
+      color: white;
+    }
+
+    .page-title h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .page-title p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ai-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(5,150,105,0.2) 100%);
+      border: 1px solid rgba(16,185,129,0.3);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: #10b981;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .ai-badge-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .credits-display {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .credits-display span {
+      color: #a855f7;
+    }
+
+    /* Main content */
+    .main-content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Script Editor */
+    .editor-panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .editor-header {
+      padding: 16px 20px;
+      background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .editor-tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    .editor-tab {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .editor-tab.active {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    .word-count {
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+    }
+
+    .editor-body {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .script-content {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 2;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .script-line {
+      display: flex;
+      margin-bottom: 8px;
+    }
+
+    .line-number {
+      width: 32px;
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+      text-align: right;
+      padding-right: 16px;
+      user-select: none;
+    }
+
+    .line-content {
+      flex: 1;
+    }
+
+    .hook {
+      color: #f093fb;
+      font-weight: 500;
+    }
+
+    .highlight {
+      background: linear-gradient(90deg, rgba(102,126,234,0.3), transparent);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .emoji {
+      font-style: normal;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 18px;
+      background: #667eea;
+      animation: blink 1s infinite;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .editor-footer {
+      padding: 16px 20px;
+      background: rgba(0,0,0,0.2);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .action-btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+
+    .action-btn.secondary {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 8px 24px rgba(102,126,234,0.4);
+    }
+
+    /* Preview panel */
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .product-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .product-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .product-thumb {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .product-meta h3 {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .product-meta p {
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+    }
+
+    .product-price-tag {
+      margin-left: auto;
+      background: rgba(16,185,129,0.2);
+      color: #10b981;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .script-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat-item {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-value {
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .stat-label {
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .tips-card {
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      border: 1px solid rgba(102,126,234,0.2);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .tips-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .tips-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .tips-title {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .tip-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .tip-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .tip-check {
+      color: #10b981;
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    /* Feature number indicator */
+    .feature-indicator {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 20px 28px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      z-index: 20;
+    }
+
+    .feature-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .feature-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .feature-text strong {
+      color: white;
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <div class="header">
+      <div class="header-left">
+        <div class="back-btn">&#8592;</div>
+        <div class="page-title">
+          <h1>Edit Your Script</h1>
+          <p>Review and customize the AI-generated script</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="ai-badge">
+          <span class="ai-badge-dot"></span>
+          AI Generated
+        </div>
+        <div class="credits-display">
+          <span>1</span> credit to generate video
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="editor-panel">
+        <div class="editor-header">
+          <div class="editor-tabs">
+            <button class="editor-tab active">Script</button>
+            <button class="editor-tab">Settings</button>
+          </div>
+          <span class="word-count">156 words &bull; ~25 seconds</span>
+        </div>
+        <div class="editor-body">
+          <div class="script-content">
+            <div class="script-line">
+              <span class="line-number">1</span>
+              <span class="line-content"><span class="hook">[HOOK]</span> Stop scrolling if you want glass skin! <span class="emoji">&#128525;</span></span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">2</span>
+              <span class="line-content"></span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">3</span>
+              <span class="line-content">I've been using this LED face mask for 2 weeks now</span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">4</span>
+              <span class="line-content">and my skin has literally never looked better.</span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">5</span>
+              <span class="line-content"></span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">6</span>
+              <span class="line-content"><span class="highlight">It has 7 different LED colors</span> that target</span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">7</span>
+              <span class="line-content">everything from acne to wrinkles to dark spots.</span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">8</span>
+              <span class="line-content"></span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">9</span>
+              <span class="line-content">The red light boosts collagen <span class="emoji">&#10024;</span></span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">10</span>
+              <span class="line-content">Blue light kills acne bacteria</span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">11</span>
+              <span class="line-content">And it only takes 15 minutes a day!</span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">12</span>
+              <span class="line-content"></span>
+            </div>
+            <div class="script-line">
+              <span class="line-number">13</span>
+              <span class="line-content"><span class="hook">[CTA]</span> Link in bio - use code GLOW20 for 20% off!<span class="cursor"></span></span>
+            </div>
+          </div>
+        </div>
+        <div class="editor-footer">
+          <div class="editor-actions">
+            <button class="action-btn secondary">
+              <span>&#8635;</span> Regenerate
+            </button>
+            <button class="action-btn secondary">
+              <span>&#128276;</span> Change Tone
+            </button>
+          </div>
+          <button class="action-btn primary">
+            <span>&#10024;</span> Generate Video
+          </button>
+        </div>
+      </div>
+
+      <div class="preview-panel">
+        <div class="product-card">
+          <div class="product-card-header">
+            <div class="product-thumb">&#128161;</div>
+            <div class="product-meta">
+              <h3>Premium LED Face Mask</h3>
+              <p>7 Color Therapy</p>
+            </div>
+            <span class="product-price-tag">$49.99</span>
+          </div>
+          <div class="script-stats">
+            <div class="stat-item">
+              <div class="stat-value">~25s</div>
+              <div class="stat-label">Duration</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">156</div>
+              <div class="stat-label">Words</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">Casual</div>
+              <div class="stat-label">Tone</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">Showcase</div>
+              <div class="stat-label">Style</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tips-card">
+          <div class="tips-header">
+            <div class="tips-icon">&#128161;</div>
+            <span class="tips-title">Script Tips</span>
+          </div>
+          <div class="tip-item">
+            <span class="tip-check">&#10003;</span>
+            <span>Strong hook in first 3 seconds</span>
+          </div>
+          <div class="tip-item">
+            <span class="tip-check">&#10003;</span>
+            <span>Clear product benefits highlighted</span>
+          </div>
+          <div class="tip-item">
+            <span class="tip-check">&#10003;</span>
+            <span>Call-to-action with discount code</span>
+          </div>
+          <div class="tip-item">
+            <span class="tip-check">&#10003;</span>
+            <span>Optimal length for TikTok engagement</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-indicator">
+      <span class="feature-number">2</span>
+      <span class="feature-text">
+        <strong>AI Script Generation</strong>
+        Customize tone, length, and style to match your brand
+      </span>
+    </div>
+  </div>
+</body>
+</html>

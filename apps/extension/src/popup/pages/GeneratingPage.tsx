@@ -4,51 +4,36 @@ import { useProductStore } from '../store/productStore';
 import { useUIStore } from '../store/uiStore';
 
 const GENERATION_STAGES = [
-  {
-    id: 'queued',
-    label: 'In Queue',
-    description: 'Preparing your request',
-    icon: 'queue',
-  },
-  {
-    id: 'generating',
-    label: 'AI Creating',
-    description: 'Generating video scenes',
-    icon: 'sparkle',
-  },
-  {
-    id: 'processing',
-    label: 'Processing',
-    description: 'Rendering final video',
-    icon: 'render',
-  },
-  {
-    id: 'completed',
-    label: 'Complete',
-    description: 'Your video is ready!',
-    icon: 'check',
-  },
+  { id: 'queued', label: 'Queue', tips: ['Warming up...', 'Preparing request...', 'In line...'] },
+  { id: 'generating', label: 'Create', tips: ['Sprinkling AI magic...', 'Teaching robots to dance...', 'Making it look effortless...'] },
+  { id: 'processing', label: 'Render', tips: ['Polishing to perfection...', 'Adding final touches...', 'Almost there...'] },
 ];
 
+const TOTAL_DURATION_SECONDS = 300; // 5 minutes
+
 export function GeneratingPage() {
-  const { currentVideo, generationProgress, error, pollVideoStatus, isGenerating, reset, clearError } = useVideoStore();
+  const { currentVideo, error, pollVideoStatus, isGenerating, reset, clearError } = useVideoStore();
   const { scrapedProduct } = useProductStore();
   const { setPage } = useUIStore();
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Timer for smooth progress
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedSeconds((prev) => Math.min(prev + 1, TOTAL_DURATION_SECONDS));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleBackToDashboard = () => {
-    // Clear any stale state and errors before going back
     clearError();
     reset();
     setPage('dashboard');
   };
 
   useEffect(() => {
-    if (
-      currentVideo &&
-      ['QUEUED', 'GENERATING', 'PROCESSING'].includes(currentVideo.status) &&
-      !isGenerating
-    ) {
+    if (currentVideo && ['QUEUED', 'GENERATING', 'PROCESSING'].includes(currentVideo.status) && !isGenerating) {
       pollVideoStatus();
     }
   }, [currentVideo, isGenerating, pollVideoStatus]);
@@ -59,55 +44,48 @@ export function GeneratingPage() {
     }
   }, [currentVideo?.status, setPage]);
 
-  // Timer for elapsed time
-  useEffect(() => {
-    if (currentVideo && ['QUEUED', 'GENERATING', 'PROCESSING'].includes(currentVideo.status)) {
-      const timer = setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-    return undefined;
-  }, [currentVideo?.status]);
-
   const getCurrentStageIndex = () => {
     if (!currentVideo) return 0;
     switch (currentVideo.status) {
-      case 'QUEUED':
-        return 0;
-      case 'GENERATING':
-        return 1;
-      case 'PROCESSING':
-        return 2;
-      case 'COMPLETED':
-        return 3;
-      default:
-        return 0;
+      case 'QUEUED': return 0;
+      case 'GENERATING': return 1;
+      case 'PROCESSING': return 2;
+      case 'COMPLETED': return 3;
+      default: return 0;
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const currentStageIndex = getCurrentStageIndex();
+  const currentStage = GENERATION_STAGES[currentStageIndex] || GENERATION_STAGES[0];
+
+  // Calculate progress: use the higher of time-based or status-based
+  const timeBasedProgress = (elapsedSeconds / TOTAL_DURATION_SECONDS) * 95; // Cap at 95%
+  const statusBasedProgress = currentStageIndex === 0 ? 15 : currentStageIndex === 1 ? 50 : currentStageIndex === 2 ? 85 : 100;
+  const progressPercent = Math.min(Math.max(timeBasedProgress, statusBasedProgress), 95); // Cap at 95% until complete
+
+  // Rotate tips
+  useEffect(() => {
+    const tips = currentStage?.tips || [];
+    if (tips.length <= 1) return;
+    const interval = setInterval(() => setTipIndex((prev) => (prev + 1) % tips.length), 3000);
+    return () => clearInterval(interval);
+  }, [currentStageIndex, currentStage?.tips]);
+
+  useEffect(() => { setTipIndex(0); }, [currentStageIndex]);
+
+  const currentTip = currentStage?.tips?.[tipIndex] || '';
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-6 animate-fade-in">
-        <div className="relative">
-          <div className="absolute inset-0 bg-red-500/20 rounded-full blur-2xl animate-pulse" />
-          <div className="relative w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center">
-            <XIcon className="w-10 h-10 text-red-500" />
-          </div>
+      <div className="flex flex-col items-center justify-center h-[480px] p-6 bg-gradient-to-b from-primary-50 via-slate-50 to-slate-100">
+        <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-4">
+          <XIcon className="w-10 h-10 text-red-500" />
         </div>
-        <h3 className="text-xl font-bold text-dark-800 mt-6 mb-2">Generation Failed</h3>
+        <h3 className="text-xl font-bold text-dark-800 mb-2">Generation Failed</h3>
         <p className="text-sm text-dark-500 text-center max-w-xs mb-6">{error}</p>
         <button
           onClick={handleBackToDashboard}
-          className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-accent-500 text-white font-medium rounded-xl shadow-glow hover:shadow-glow-lg transition-all hover:scale-105"
+          className="px-6 py-3 bg-gradient-to-r from-primary-600 to-accent-500 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
           Back to Dashboard
         </button>
@@ -116,174 +94,268 @@ export function GeneratingPage() {
   }
 
   return (
-    <div className="relative min-h-[480px] overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-accent-50">
-        {/* Floating orbs */}
-        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-primary-200/40 to-accent-200/40 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-5 w-40 h-40 bg-gradient-to-br from-accent-200/40 to-primary-200/40 rounded-full blur-3xl animate-float" style={{ animationDelay: '-1.5s' }} />
-        <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-gradient-to-br from-primary-300/30 to-accent-300/30 rounded-full blur-2xl animate-pulse-slow" />
+    <div className="h-[480px] flex flex-col bg-gradient-to-b from-primary-50 via-slate-50 to-slate-100 relative overflow-hidden">
+      {/* Ambient glow effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary-200/50 rounded-full blur-3xl animate-float-slow" />
+        <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-48 h-48 bg-accent-200/40 rounded-full blur-3xl animate-float-reverse" />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center p-6 animate-fade-in">
-        {/* Product Preview Card */}
-        {scrapedProduct && (
-          <div className="w-full max-w-xs mb-6 animate-fade-in-up">
-            <div className="glass rounded-2xl p-3 border border-white/50 shadow-soft">
-              <div className="flex items-center gap-3">
-                {scrapedProduct.images[0] && (
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-accent-400 rounded-xl blur opacity-30 animate-pulse-slow" />
-                    <img
-                      src={scrapedProduct.images[0]}
-                      alt={scrapedProduct.title}
-                      className="relative w-14 h-14 object-cover rounded-xl ring-2 ring-white/50"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-dark-400 mb-0.5">Creating video for</p>
-                  <p className="text-sm font-medium text-dark-800 truncate">{scrapedProduct.title}</p>
-                </div>
+      {/* Product Header */}
+      {scrapedProduct && (
+        <div className="px-4 pt-3 relative z-10">
+          <div className="flex items-center gap-3 px-3 py-2 bg-white rounded-xl shadow-soft border border-dark-100">
+            {scrapedProduct.images[0] && (
+              <img src={scrapedProduct.images[0]} alt="" className="w-9 h-9 object-cover rounded-lg" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-dark-800 truncate">{scrapedProduct.title}</p>
+              <p className="text-[10px] text-dark-400">Generating video...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Centered */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
+        {/* Cosmic Forge Animation */}
+        <div className="relative mb-6 w-32 h-32">
+          {/* Ambient glow background */}
+          <div
+            className="absolute -inset-6 rounded-full blur-2xl"
+            style={{
+              background: 'radial-gradient(circle, rgba(139,92,246,0.35) 0%, rgba(167,139,250,0.2) 40%, transparent 70%)',
+              animation: 'pulse 3s ease-in-out infinite',
+            }}
+          />
+
+          {/* Outer dashed ring - slow reverse rotation */}
+          <div
+            className="absolute -inset-2"
+            style={{ animation: 'spin 15s linear infinite reverse' }}
+          >
+            <svg className="w-full h-full" viewBox="0 0 100 100">
+              <circle
+                cx="50" cy="50" r="48"
+                fill="none"
+                stroke="rgba(167,139,250,0.4)"
+                strokeWidth="1"
+                strokeLinecap="round"
+                strokeDasharray="4 8 2 12"
+              />
+            </svg>
+          </div>
+
+          {/* Energy arcs - rotating gradient segments */}
+          <div
+            className="absolute inset-1"
+            style={{ animation: 'spin 10s linear infinite' }}
+          >
+            <svg className="w-full h-full" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="arcGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="50%" stopColor="#a78bfa" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 50 8 A 42 42 0 0 1 92 50"
+                fill="none"
+                stroke="url(#arcGrad1)"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                d="M 50 92 A 42 42 0 0 1 8 50"
+                fill="none"
+                stroke="url(#arcGrad1)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.7"
+              />
+            </svg>
+          </div>
+
+          {/* Inner solid ring - faster rotation */}
+          <div
+            className="absolute inset-3"
+            style={{ animation: 'spin 8s linear infinite' }}
+          >
+            <svg className="w-full h-full" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="innerRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="50%" stopColor="#a78bfa" />
+                  <stop offset="100%" stopColor="#c4b5fd" />
+                </linearGradient>
+              </defs>
+              <circle
+                cx="50" cy="50" r="42"
+                fill="none"
+                stroke="url(#innerRing)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="40 20 60 30"
+              />
+            </svg>
+          </div>
+
+          {/* Orbiting particles - different speeds and distances */}
+          <div className="absolute inset-0" style={{ animation: 'spin 4s linear infinite' }}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-violet-400 rounded-full" style={{ boxShadow: '0 0 10px rgba(139,92,246,0.8), 0 0 20px rgba(139,92,246,0.4)' }} />
+          </div>
+          <div className="absolute inset-1" style={{ animation: 'spin 5s linear infinite reverse' }}>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-purple-300 rounded-full" style={{ boxShadow: '0 0 8px rgba(196,181,253,0.8)' }} />
+          </div>
+          <div className="absolute inset-2" style={{ animation: 'spin 6s linear infinite' }}>
+            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-1.5 h-1.5 bg-fuchsia-300 rounded-full" style={{ boxShadow: '0 0 6px rgba(240,171,252,0.7)' }} />
+          </div>
+          <div className="absolute inset-0" style={{ animation: 'spin 7s linear infinite reverse' }}>
+            <div className="absolute top-1/2 left-0 -translate-y-1/2 w-1.5 h-1.5 bg-violet-300 rounded-full" style={{ boxShadow: '0 0 6px rgba(167,139,250,0.7)' }} />
+          </div>
+          <div className="absolute inset-3" style={{ animation: 'spin 4.5s linear infinite' }}>
+            <div className="absolute top-0 right-1/4 w-1 h-1 bg-purple-200 rounded-full" style={{ boxShadow: '0 0 4px rgba(221,214,254,0.8)' }} />
+          </div>
+          <div className="absolute inset-2" style={{ animation: 'spin 5.5s linear infinite reverse' }}>
+            <div className="absolute bottom-1/4 left-0 w-1 h-1 bg-violet-200 rounded-full" style={{ boxShadow: '0 0 4px rgba(196,181,253,0.6)' }} />
+          </div>
+
+          {/* Twinkling sparkles */}
+          <div
+            className="absolute top-1 left-1/4 w-1 h-1 bg-white rounded-full"
+            style={{ animation: 'twinkle 2s ease-in-out infinite', boxShadow: '0 0 4px rgba(255,255,255,0.8)' }}
+          />
+          <div
+            className="absolute bottom-2 right-1/4 w-0.5 h-0.5 bg-white rounded-full"
+            style={{ animation: 'twinkle 2.5s ease-in-out infinite 0.5s', boxShadow: '0 0 3px rgba(255,255,255,0.6)' }}
+          />
+          <div
+            className="absolute top-1/3 right-1 w-0.5 h-0.5 bg-violet-100 rounded-full"
+            style={{ animation: 'twinkle 3s ease-in-out infinite 1s', boxShadow: '0 0 3px rgba(237,233,254,0.7)' }}
+          />
+          <div
+            className="absolute bottom-1/3 left-2 w-0.5 h-0.5 bg-white rounded-full"
+            style={{ animation: 'twinkle 2.2s ease-in-out infinite 1.5s', boxShadow: '0 0 3px rgba(255,255,255,0.5)' }}
+          />
+
+          {/* Core orb with breathing */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="relative"
+              style={{ animation: 'breathe 3s ease-in-out infinite' }}
+            >
+              {/* Pulsing glow ring */}
+              <div
+                className="absolute -inset-4 rounded-full"
+                style={{
+                  background: 'radial-gradient(circle, rgba(139,92,246,0.5) 0%, rgba(139,92,246,0.2) 40%, transparent 70%)',
+                  animation: 'pulse 2s ease-in-out infinite',
+                }}
+              />
+              {/* Core sphere */}
+              <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-violet-600 flex items-center justify-center shadow-xl" style={{ boxShadow: '0 0 20px rgba(139,92,246,0.5), 0 4px 15px rgba(124,58,237,0.3)' }}>
+                {currentStageIndex === 0 && <QueueIcon className="w-6 h-6 text-white" />}
+                {currentStageIndex === 1 && <SparkleIcon className="w-6 h-6 text-white" />}
+                {currentStageIndex === 2 && <RenderIcon className="w-6 h-6 text-white" />}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Main Progress Circle */}
-        <div className="relative w-40 h-40 mb-6">
-          {/* Outer glow ring */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-400 to-accent-400 rounded-full opacity-20 blur-xl animate-pulse-slow" />
+        {/* Status Text */}
+        <h2 className="text-2xl font-bold text-dark-800 mb-1">
+          {currentStageIndex === 0 && 'Queued'}
+          {currentStageIndex === 1 && 'Creating'}
+          {currentStageIndex === 2 && 'Rendering'}
+        </h2>
+        <p className="text-sm text-dark-500 mb-6">AI is crafting your video</p>
 
-          {/* Rotating border */}
-          <div className="absolute inset-0 rounded-full animate-spin-slow z-20" style={{ animationDuration: '8s' }}>
-            <div className="absolute w-3 h-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full shadow-glow" style={{ top: '8px', left: '50%', transform: 'translateX(-50%)' }} />
-          </div>
-
-          {/* Progress ring */}
-          <svg className="absolute inset-2 w-36 h-36 -rotate-90">
-            <circle
-              cx="72"
-              cy="72"
-              r="66"
-              strokeWidth="6"
-              stroke="currentColor"
-              fill="none"
-              className="text-dark-100"
-            />
-            <circle
-              cx="72"
-              cy="72"
-              r="66"
-              strokeWidth="6"
-              stroke="url(#progressGradient2)"
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 66}`}
-              strokeDashoffset={`${2 * Math.PI * 66 * (1 - generationProgress / 100)}`}
-              className="transition-all duration-700 ease-out"
-            />
-            <defs>
-              <linearGradient id="progressGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#486581" />
-                <stop offset="100%" stopColor="#44a69c" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          {/* Center content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-accent-500 bg-clip-text text-transparent">
-              {generationProgress}%
-            </span>
-            <span className="text-xs text-dark-400 mt-1">{formatTime(elapsedTime)}</span>
+        {/* Progress Bar */}
+        <div className="w-full max-w-xs mb-4">
+          <div className="h-2.5 bg-dark-100 rounded-full overflow-hidden shadow-inner relative">
+            {/* Animated progress fill */}
+            <div
+              className="h-full rounded-full transition-all duration-700 relative overflow-hidden"
+              style={{
+                width: `${progressPercent}%`,
+                background: 'linear-gradient(90deg, #7c3aed, #8b5cf6, #a78bfa, #f97316, #fb923c, #7c3aed)',
+                backgroundSize: '200% 100%',
+                animation: 'gradient-flow 3s ease infinite',
+                boxShadow: '0 0 12px rgba(139,92,246,0.5), 0 0 4px rgba(249,115,22,0.4)',
+              }}
+            >
+              {/* Shimmer sweep overlay */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+                  animation: 'shimmer-sweep 2s ease-in-out infinite',
+                }}
+              />
+            </div>
+            {/* Leading edge glow */}
+            {progressPercent > 0 && (
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full transition-all duration-700"
+                style={{
+                  left: `calc(${progressPercent}% - 6px)`,
+                  background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(249,115,22,0.8) 40%, transparent 70%)',
+                  boxShadow: '0 0 8px rgba(249,115,22,0.8), 0 0 16px rgba(139,92,246,0.5)',
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                }}
+              />
+            )}
           </div>
         </div>
 
         {/* Stage Indicators */}
-        <div className="w-full max-w-xs mb-6">
-          <div className="flex items-center justify-between relative">
-            {/* Progress line */}
-            <div className="absolute top-4 left-8 right-8 h-0.5 bg-dark-100">
-              <div
-                className="h-full bg-gradient-to-r from-primary-500 to-accent-500 transition-all duration-500"
-                style={{ width: `${(currentStageIndex / (GENERATION_STAGES.length - 1)) * 100}%` }}
-              />
+        <div className="flex items-center gap-6 mb-6">
+          {GENERATION_STAGES.map((stage, index) => (
+            <div key={stage.id} className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full transition-all ${
+                index < currentStageIndex ? 'bg-success-500' :
+                index === currentStageIndex ? 'bg-gradient-to-r from-primary-500 to-accent-500 animate-pulse' :
+                'bg-dark-200'
+              }`} />
+              <span className={`text-xs font-medium ${
+                index <= currentStageIndex ? 'text-dark-700' : 'text-dark-400'
+              }`}>
+                {stage.label}
+              </span>
             </div>
-
-            {GENERATION_STAGES.map((stage, index) => (
-              <div key={stage.id} className="relative flex flex-col items-center z-10">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    index <= currentStageIndex
-                      ? 'bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-glow'
-                      : 'bg-dark-100 text-dark-400'
-                  }`}
-                >
-                  {index < currentStageIndex ? (
-                    <CheckIcon className="w-4 h-4" />
-                  ) : index === currentStageIndex ? (
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  ) : (
-                    <span className="text-xs font-medium">{index + 1}</span>
-                  )}
-                </div>
-                <span
-                  className={`text-[10px] mt-1.5 font-medium transition-colors ${
-                    index <= currentStageIndex ? 'text-dark-700' : 'text-dark-400'
-                  }`}
-                >
-                  {stage.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
 
-        {/* Current Status */}
-        <div className="text-center mb-6">
-          <h3 className="text-lg font-bold text-dark-800 mb-1">
-            {GENERATION_STAGES[currentStageIndex]?.description || 'Processing...'}
-          </h3>
-          <p className="text-sm text-dark-400">
-            {currentStageIndex < 3 ? 'This usually takes 1-3 minutes' : 'Almost there!'}
-          </p>
-        </div>
-
-        {/* Activity Feed */}
-        <div className="w-full max-w-xs glass rounded-2xl p-4 border border-white/50 shadow-soft mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 bg-accent-500 rounded-full animate-pulse" />
-            <span className="text-xs font-medium text-dark-600">Live Activity</span>
+        {/* Rotating Tip */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-soft border border-dark-100">
+          <div className="flex gap-0.5">
+            <div className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
+            <div className="w-1.5 h-1.5 bg-accent-500 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
           </div>
-          <div className="space-y-2.5">
-            <ActivityItem
-              active={currentStageIndex >= 0}
-              done={currentStageIndex > 0}
-              text="Request received and validated"
-            />
-            <ActivityItem
-              active={currentStageIndex >= 1}
-              done={currentStageIndex > 1}
-              text="AI generating video scenes"
-            />
-            <ActivityItem
-              active={currentStageIndex >= 2}
-              done={currentStageIndex > 2}
-              text="Rendering and processing"
-            />
-          </div>
+          <span key={currentTip} className="text-sm text-dark-600 animate-fade-in">{currentTip}</span>
         </div>
+      </div>
 
-        {/* Info Banner */}
-        <div className="w-full max-w-xs bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl p-3 border border-primary-100/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-soft">
-              <BellIcon className="w-4 h-4 text-primary-600" />
+      {/* Footer */}
+      <div className="px-4 pb-3 relative z-10">
+        <div className="flex items-center justify-between px-3 py-2 bg-white rounded-xl shadow-soft border border-dark-100">
+          <div className="flex items-center gap-1.5">
+            <CloudIcon className="w-3.5 h-3.5 text-dark-400 animate-pulse" />
+            <span className="text-[11px] text-dark-500">Processing in background</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPage('history')}
+              className="text-[11px] font-medium text-primary-600 hover:text-primary-500 transition-colors"
+            >
+              History →
+            </button>
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-success-100 rounded-full">
+              <div className="w-1.5 h-1.5 bg-success-500 rounded-full animate-pulse" />
+              <span className="text-[10px] font-medium text-success-600">Saving</span>
             </div>
-            <p className="text-xs text-dark-600">
-              You can close this popup. We'll save your progress!
-            </p>
           </div>
         </div>
       </div>
@@ -291,31 +363,7 @@ export function GeneratingPage() {
   );
 }
 
-function ActivityItem({ active, done, text }: { active: boolean; done: boolean; text: string }) {
-  return (
-    <div className={`flex items-center gap-2.5 transition-opacity ${active ? 'opacity-100' : 'opacity-40'}`}>
-      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-        done
-          ? 'bg-gradient-to-br from-primary-500 to-accent-500'
-          : active
-            ? 'bg-dark-200'
-            : 'bg-dark-100'
-      }`}>
-        {done ? (
-          <CheckIcon className="w-3 h-3 text-white" />
-        ) : active ? (
-          <div className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse" />
-        ) : (
-          <div className="w-1.5 h-1.5 bg-dark-300 rounded-full" />
-        )}
-      </div>
-      <span className={`text-xs ${done ? 'text-dark-700' : active ? 'text-dark-600' : 'text-dark-400'}`}>
-        {text}
-      </span>
-    </div>
-  );
-}
-
+// Icons
 function XIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -324,18 +372,34 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
-function CheckIcon({ className }: { className?: string }) {
+function CloudIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-      <path d="M5 12l5 5L20 7" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
     </svg>
   );
 }
 
-function BellIcon({ className }: { className?: string }) {
+function QueueIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+      <path d="M4 6h16M4 12h16M4 18h10" />
+    </svg>
+  );
+}
+
+function SparkleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
+    </svg>
+  );
+}
+
+function RenderIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
     </svg>
   );
 }

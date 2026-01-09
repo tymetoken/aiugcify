@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=800">
+  <title>Screenshot 3 - Video Ready</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+    }
+
+    .browser-frame {
+      width: 100%;
+      height: 100%;
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+    }
+
+    /* Browser toolbar */
+    .toolbar {
+      height: 48px;
+      background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .control.close { background: #ff5f56; }
+    .control.minimize { background: #ffbd2e; }
+    .control.maximize { background: #27ca3f; }
+
+    .address-bar {
+      flex: 1;
+      max-width: 600px;
+      height: 32px;
+      background: #1a1a1a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      margin-left: 60px;
+    }
+
+    .lock-icon {
+      color: #27ca3f;
+      font-size: 12px;
+    }
+
+    .url {
+      color: #888;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .url span {
+      color: #fff;
+    }
+
+    .extension-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+      margin-left: auto;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+    }
+
+    /* Main content area */
+    .content-area {
+      display: flex;
+      height: calc(100% - 48px);
+      position: relative;
+    }
+
+    /* Background gradient */
+    .bg-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%);
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.4;
+    }
+
+    .bg-orb-1 {
+      width: 400px;
+      height: 400px;
+      background: #667eea;
+      top: -100px;
+      right: 20%;
+    }
+
+    .bg-orb-2 {
+      width: 300px;
+      height: 300px;
+      background: #10b981;
+      bottom: -100px;
+      left: 10%;
+    }
+
+    /* Extension popup */
+    .popup-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+    }
+
+    .popup {
+      width: 400px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow:
+        0 25px 80px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+
+    .popup-header {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 24px;
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .success-particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50%;
+      animation: float-up 3s ease-out infinite;
+    }
+
+    .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 25%; animation-delay: 0.5s; }
+    .particle:nth-child(3) { left: 40%; animation-delay: 1s; }
+    .particle:nth-child(4) { left: 55%; animation-delay: 1.5s; }
+    .particle:nth-child(5) { left: 70%; animation-delay: 0.3s; }
+    .particle:nth-child(6) { left: 85%; animation-delay: 0.8s; }
+
+    @keyframes float-up {
+      0% { transform: translateY(100px); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-50px); opacity: 0; }
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 32px;
+      animation: pulse-success 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-success {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 20px 10px rgba(255,255,255,0.2); }
+    }
+
+    .popup-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .popup-header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .popup-body {
+      padding: 24px;
+    }
+
+    /* Video preview */
+    .video-preview {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-frame {
+      aspect-ratio: 9/16;
+      max-height: 200px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-content {
+      text-align: center;
+      color: white;
+    }
+
+    .play-button {
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .video-duration {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .video-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(16, 185, 129, 0.9);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .video-info {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 12px;
+    }
+
+    .info-item {
+      text-align: center;
+    }
+
+    .info-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .info-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Action buttons */
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(102,126,234,0.4);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 14px;
+      background: #f8f9fa;
+      color: #333;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-row .btn-secondary {
+      flex: 1;
+    }
+
+    /* Credit used notice */
+    .credit-notice {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    .credit-icon {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: white;
+    }
+
+    .credit-text {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .credit-text strong {
+      color: #333;
+    }
+
+    /* Feature callout */
+    .callout {
+      position: absolute;
+      top: 200px;
+      left: 80px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 15px 40px rgba(240,147,251,0.4);
+      max-width: 200px;
+    }
+
+    .callout-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .callout-title {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .callout-desc {
+      font-size: 12px;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+
+    /* Stats panel */
+    .stats-panel {
+      position: absolute;
+      bottom: 80px;
+      right: 80px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 20px 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .stats-title {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* Highlight box */
+    .highlight-box {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 20px 28px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .highlight-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .highlight-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .highlight-text strong {
+      color: white;
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="browser-frame">
+    <div class="toolbar">
+      <div class="window-controls">
+        <div class="control close"></div>
+        <div class="control minimize"></div>
+        <div class="control maximize"></div>
+      </div>
+      <div class="address-bar">
+        <span class="lock-icon">&#128274;</span>
+        <span class="url">shop.tiktok.com/view/product/<span>premium-led-mask</span></span>
+      </div>
+      <div class="extension-icon">AI</div>
+    </div>
+
+    <div class="content-area">
+      <div class="bg-gradient">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+      </div>
+
+      <!-- Extension Popup -->
+      <div class="popup-container">
+        <div class="popup">
+          <div class="popup-header">
+            <div class="success-particles">
+              <div class="particle"></div>
+              <div class="particle"></div>
+              <div class="particle"></div>
+              <div class="particle"></div>
+              <div class="particle"></div>
+              <div class="particle"></div>
+            </div>
+            <div class="success-icon">&#10003;</div>
+            <h2>Video Ready!</h2>
+            <p>Your AI-generated UGC video is complete</p>
+          </div>
+
+          <div class="popup-body">
+            <div class="video-preview">
+              <div class="video-frame">
+                <div class="video-content">
+                  <div class="play-button">&#9658;</div>
+                  <div class="video-duration">0:32</div>
+                </div>
+              </div>
+              <div class="video-badge">
+                &#10024; AI Generated
+              </div>
+              <div class="video-info">
+                <div class="info-item">
+                  <div class="info-value">1080p</div>
+                  <div class="info-label">Quality</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-value">9:16</div>
+                  <div class="info-label">Ratio</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-value">32s</div>
+                  <div class="info-label">Duration</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-buttons">
+              <button class="btn-primary">
+                &#11015; Download Video
+              </button>
+              <div class="btn-row">
+                <button class="btn-secondary">
+                  &#128260; Regenerate
+                </button>
+                <button class="btn-secondary">
+                  &#128279; Share
+                </button>
+              </div>
+            </div>
+
+            <div class="credit-notice">
+              <span class="credit-icon">&#9733;</span>
+              <span class="credit-text"><strong>1 Credit Used</strong> • 11 credits remaining</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout -->
+      <div class="callout">
+        <div class="callout-icon">&#127916;</div>
+        <div class="callout-title">Ready to Post!</div>
+        <div class="callout-desc">Download your video and upload directly to TikTok</div>
+      </div>
+
+      <!-- Stats panel -->
+      <div class="stats-panel">
+        <div class="stats-title">Video Generation</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value">32s</div>
+            <div class="stat-label">Video Length</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">~2m</div>
+            <div class="stat-label">Gen Time</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature highlight -->
+      <div class="highlight-box">
+        <span class="highlight-number">3</span>
+        <span class="highlight-text">
+          <strong>Instant Download</strong>
+          HD videos ready to post on TikTok, Instagram & more
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1400, height=560">
+  <title>AI UGCify - Marquee Banner 1400x560</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1400px;
+      height: 560px;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .container {
+      width: 1400px;
+      height: 560px;
+      background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      padding: 0 80px;
+    }
+
+    /* Animated gradient orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.5;
+    }
+
+    .orb-1 {
+      width: 500px;
+      height: 500px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      top: -150px;
+      right: 10%;
+      animation: float 12s ease-in-out infinite;
+    }
+
+    .orb-2 {
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      bottom: -150px;
+      left: 5%;
+      animation: float 15s ease-in-out infinite reverse;
+    }
+
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      top: 40%;
+      left: 40%;
+      animation: pulse 8s ease-in-out infinite;
+    }
+
+    .orb-4 {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      bottom: 20%;
+      right: 30%;
+      animation: float 10s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-30px) scale(1.1); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    /* Grid pattern overlay */
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    /* Content left side */
+    .content-left {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 30px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      color: white;
+      box-shadow: 0 15px 50px rgba(102, 126, 234, 0.4);
+    }
+
+    .title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 52px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .title span {
+      background: linear-gradient(135deg, #667eea 0%, #a855f7 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 500px;
+    }
+
+    .features {
+      display: flex;
+      gap: 32px;
+    }
+
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      color: rgba(255,255,255,0.9);
+      font-weight: 500;
+    }
+
+    .feature-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #10b981;
+    }
+
+    /* Content right side - mockup */
+    .content-right {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .mockup-container {
+      position: relative;
+    }
+
+    /* Extension popup mockup */
+    .popup-mockup {
+      width: 340px;
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 30px 100px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(255,255,255,0.1);
+      transform: perspective(1000px) rotateY(-5deg) rotateX(2deg);
+    }
+
+    .popup-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      color: white;
+    }
+
+    .popup-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .popup-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .popup-logo-icon {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .popup-logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .credits-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .product-detected {
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .product-thumb {
+      width: 44px;
+      height: 44px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 6px;
+    }
+
+    .product-detected-info h3 {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .product-detected-info p {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .product-detected-price {
+      font-weight: 700;
+      font-size: 14px;
+      margin-left: auto;
+    }
+
+    .popup-body {
+      padding: 18px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .video-styles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .style-card {
+      background: #f8f9fa;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .style-card.active {
+      border-color: #667eea;
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+    }
+
+    .style-icon {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .style-name {
+      font-size: 10px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+    }
+
+    /* Floating elements */
+    .floating-stat {
+      position: absolute;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      padding: 14px 18px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+      animation: float-gentle 6s ease-in-out infinite;
+    }
+
+    @keyframes float-gentle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .floating-stat-1 {
+      top: -30px;
+      left: -60px;
+      animation-delay: 0s;
+    }
+
+    .floating-stat-2 {
+      bottom: 80px;
+      right: -80px;
+      animation-delay: 2s;
+    }
+
+    .floating-stat-3 {
+      bottom: -20px;
+      left: -40px;
+      animation-delay: 4s;
+    }
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .stat-icon.purple {
+      background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%);
+    }
+
+    .stat-icon.green {
+      background: rgba(16, 185, 129, 0.2);
+    }
+
+    .stat-icon.pink {
+      background: rgba(240, 147, 251, 0.2);
+    }
+
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 2px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* TikTok badge */
+    .tiktok-badge {
+      position: absolute;
+      right: 80px;
+      bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 16px;
+      z-index: 10;
+    }
+
+    .tiktok-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    .tiktok-text {
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+      font-weight: 500;
+    }
+
+    .tiktok-text strong {
+      color: #fff;
+      display: block;
+    }
+
+    /* CTA */
+    .cta-text {
+      position: absolute;
+      left: 80px;
+      bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 10;
+    }
+
+    .cta-arrow {
+      font-size: 18px;
+      animation: bounce-right 1.5s ease-in-out infinite;
+    }
+
+    @keyframes bounce-right {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(5px); }
+    }
+
+    /* Shine effect */
+    .shine {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+      transform: skewX(-20deg);
+      animation: shine 6s ease-in-out infinite;
+    }
+
+    @keyframes shine {
+      0%, 100% { left: -100%; }
+      50% { left: 150%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <div class="grid-overlay"></div>
+    <div class="shine"></div>
+
+    <div class="content-left">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Chrome Extension
+      </div>
+
+      <div class="logo-row">
+        <div class="logo-icon">AI</div>
+        <h1 class="title">UGCify</h1>
+      </div>
+
+      <p class="subtitle">Turn any TikTok Shop product into a viral UGC video in minutes. AI-powered scripts and video generation.</p>
+
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">&#10003;</span>
+          One-Click Scripts
+        </div>
+        <div class="feature">
+          <span class="feature-icon">&#10003;</span>
+          AI Video Generation
+        </div>
+        <div class="feature">
+          <span class="feature-icon">&#10003;</span>
+          Instant Download
+        </div>
+      </div>
+    </div>
+
+    <div class="content-right">
+      <div class="mockup-container">
+        <div class="popup-mockup">
+          <div class="popup-header">
+            <div class="popup-header-top">
+              <div class="popup-logo">
+                <div class="popup-logo-icon">AI</div>
+                <span class="popup-logo-text">UGCify</span>
+              </div>
+              <div class="credits-badge">12 Credits</div>
+            </div>
+            <div class="product-detected">
+              <div class="product-thumb"></div>
+              <div class="product-detected-info">
+                <h3>LED Face Mask Pro</h3>
+                <p>TikTok Shop Product</p>
+              </div>
+              <span class="product-detected-price">$49.99</span>
+            </div>
+          </div>
+          <div class="popup-body">
+            <div class="section-title">Choose Video Style</div>
+            <div class="video-styles">
+              <div class="style-card active">
+                <div class="style-icon">&#127916;</div>
+                <div class="style-name">Showcase</div>
+              </div>
+              <div class="style-card">
+                <div class="style-icon">&#128100;</div>
+                <div class="style-name">Talking Head</div>
+              </div>
+              <div class="style-card">
+                <div class="style-icon">&#127968;</div>
+                <div class="style-name">Lifestyle</div>
+              </div>
+            </div>
+            <button class="generate-btn">
+              &#10024; Generate Video Script
+            </button>
+          </div>
+        </div>
+
+        <!-- Floating stats -->
+        <div class="floating-stat floating-stat-1">
+          <div class="stat-icon purple">&#9889;</div>
+          <div class="stat-value">~2min</div>
+          <div class="stat-label">Generation Time</div>
+        </div>
+
+        <div class="floating-stat floating-stat-2">
+          <div class="stat-icon green">&#10003;</div>
+          <div class="stat-value">1080p</div>
+          <div class="stat-label">HD Quality</div>
+        </div>
+
+        <div class="floating-stat floating-stat-3">
+          <div class="stat-icon pink">&#127916;</div>
+          <div class="stat-value">9:16</div>
+          <div class="stat-label">TikTok Ready</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tiktok-badge">
+      <svg class="tiktok-icon" viewBox="0 0 24 24" fill="white">
+        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+      </svg>
+      <span class="tiktok-text">
+        <strong>TikTok Shop</strong>
+        Integration
+      </span>
+    </div>
+
+    <div class="cta-text">
+      Install Free & Start Creating <span class="cta-arrow">&#10145;</span>
+    </div>
+  </div>
+</body>
+</html>

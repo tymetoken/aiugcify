@@ -213,7 +213,6 @@ class StripeService {
     // Build subscription description
     const intervalLabel = interval === 'monthly' ? 'Monthly' : 'Yearly';
     const subscriptionDescription = `${plan.name} Plan (${intervalLabel}) - ${credits} video credits${bonusCredits > 0 ? ` + ${bonusCredits} bonus` : ''}`;
-    const statementDescriptor = `${plan.name} ${intervalLabel}`.substring(0, 22); // Max 22 chars
 
     // Create subscription checkout session
     const session = await stripe.checkout.sessions.create({
@@ -341,6 +340,11 @@ class StripeService {
       ? newPlan.monthlyStripePriceId
       : newPlan.yearlyStripePriceId;
 
+    // Build subscription description for Stripe
+    const newCredits = newInterval === 'monthly' ? newPlan.monthlyCredits : newPlan.yearlyCredits;
+    const newIntervalLabel = newInterval === 'monthly' ? 'Monthly' : 'Yearly';
+    const subscriptionDescription = `${newPlan.name} Plan (${newIntervalLabel}) - ${newCredits} video credits`;
+
     // Get Stripe subscription to find the subscription item ID
     const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
     const subscriptionItemId = stripeSubscription.items.data[0].id;
@@ -350,6 +354,7 @@ class StripeService {
     const updatedStripeSubscription = await stripe.subscriptions.update(
       subscription.stripeSubscriptionId,
       {
+        description: subscriptionDescription,
         items: [{
           id: subscriptionItemId,
           price: newStripePriceId,
@@ -359,7 +364,10 @@ class StripeService {
         metadata: {
           userId,
           planId: newPlanId,
+          planName: newPlan.name,
           interval: newInterval,
+          credits: newCredits.toString(),
+          description: subscriptionDescription,
         },
       }
     );
@@ -411,6 +419,8 @@ class StripeService {
           });
 
           // Create transaction record for the upgrade credits
+          const oldIntervalLabel = subscription.interval === 'MONTHLY' ? 'Monthly' : 'Yearly';
+          const newIntervalLabel = newInterval === 'monthly' ? 'Monthly' : 'Yearly';
           await tx.creditTransaction.create({
             data: {
               userId,
@@ -418,7 +428,7 @@ class StripeService {
               status: 'COMPLETED',
               amount: creditDifference,
               balanceAfter: newBalance,
-              description: `Plan upgrade: ${subscription.plan.name} → ${newPlan.name} (+${creditDifference} credits)`,
+              description: `Plan upgrade: ${subscription.plan.name} (${oldIntervalLabel}) → ${newPlan.name} (${newIntervalLabel}) (+${creditDifference} credits)`,
             },
           });
 
@@ -543,7 +553,18 @@ class StripeService {
   }
 
   private async handleCheckoutComplete(session: Stripe.Checkout.Session) {
-    const { userId, type, credits, bonusCredits } = session.metadata!;
+    // Validate metadata exists
+    if (!session.metadata) {
+      logger.error({ sessionId: session.id }, 'Checkout session missing metadata');
+      throw new Error('Invalid checkout session: missing metadata');
+    }
+
+    const { userId, type, credits, bonusCredits } = session.metadata;
+
+    if (!userId) {
+      logger.error({ sessionId: session.id }, 'Checkout session missing userId in metadata');
+      throw new Error('Invalid checkout session: missing userId');
+    }
 
     // Handle subscription checkout
     if (type === 'subscription' || session.mode === 'subscription') {
@@ -551,8 +572,19 @@ class StripeService {
       return;
     }
 
+    // Validate credits for one-time purchases
+    if (!credits) {
+      logger.error({ sessionId: session.id }, 'One-time checkout missing credits in metadata');
+      throw new Error('Invalid checkout session: missing credits');
+    }
+
     // Handle one-time purchase
     const totalCredits = parseInt(credits, 10) + parseInt(bonusCredits || '0', 10);
+
+    if (isNaN(totalCredits) || totalCredits <= 0) {
+      logger.error({ sessionId: session.id, credits, bonusCredits }, 'Invalid credit values in metadata');
+      throw new Error('Invalid checkout session: invalid credit values');
+    }
 
     logger.info({ sessionId: session.id, userId, totalCredits }, 'Processing checkout completion');
 
@@ -591,8 +623,19 @@ class StripeService {
   }
 
   private async handleSubscriptionCheckoutComplete(session: Stripe.Checkout.Session) {
-    const { userId, planId, interval } = session.metadata!;
+    // Validate metadata (already checked in parent, but defensive check)
+    if (!session.metadata?.userId || !session.metadata?.planId || !session.metadata?.interval) {
+      logger.error({ sessionId: session.id }, 'Subscription checkout missing required metadata');
+      throw new Error('Invalid subscription checkout: missing metadata');
+    }
+
+    const { userId, planId, interval } = session.metadata;
     const stripeSubscriptionId = session.subscription as string;
+
+    if (!stripeSubscriptionId) {
+      logger.error({ sessionId: session.id }, 'Subscription checkout missing subscription ID');
+      throw new Error('Invalid subscription checkout: missing subscription ID');
+    }
 
     logger.info(
       { sessionId: session.id, userId, planId, interval, stripeSubscriptionId },
@@ -668,6 +711,19 @@ class StripeService {
       'Processing subscription invoice payment'
     );
 
+    // Invoice-level idempotency check - prevent double credit allocation
+    const existingAllocation = await prisma.creditTransaction.findFirst({
+      where: {
+        description: { contains: `Invoice: ${invoice.id}` },
+        type: 'SUBSCRIPTION_CREDIT',
+      },
+    });
+
+    if (existingAllocation) {
+      logger.info({ invoiceId: invoice.id }, 'Invoice already processed, skipping credit allocation');
+      return;
+    }
+
     const subscription = await prisma.subscription.findUnique({
       where: { stripeSubscriptionId },
     });
@@ -688,8 +744,8 @@ class StripeService {
       },
     });
 
-    // Allocate monthly credits
-    await subscriptionService.allocateMonthlyCredits(subscription.id);
+    // Allocate monthly credits with invoice ID for tracking
+    await subscriptionService.allocateMonthlyCredits(subscription.id, undefined, invoice.id);
 
     logger.info(
       { invoiceId: invoice.id, subscriptionId: subscription.id },
@@ -755,8 +811,79 @@ class StripeService {
 
   private async handleRefund(charge: Stripe.Charge) {
     logger.info({ chargeId: charge.id }, 'Processing refund');
-    // TODO: Implement refund logic if needed
-    // This would deduct credits if they were used after purchase
+
+    const userId = charge.metadata?.userId;
+    if (!userId) {
+      logger.warn({ chargeId: charge.id }, 'Refund charge missing userId metadata, cannot process');
+      return;
+    }
+
+    // Find the original transaction for this payment
+    const originalTransaction = await prisma.creditTransaction.findFirst({
+      where: {
+        stripePaymentId: charge.payment_intent as string,
+        type: 'PURCHASE',
+        status: 'COMPLETED',
+      },
+    });
+
+    if (!originalTransaction) {
+      logger.warn({ chargeId: charge.id, paymentIntent: charge.payment_intent }, 'Original transaction not found for refund');
+      return;
+    }
+
+    // Check if already refunded
+    const existingRefund = await prisma.creditTransaction.findFirst({
+      where: {
+        stripePaymentId: charge.id,
+        type: 'REFUND',
+      },
+    });
+
+    if (existingRefund) {
+      logger.info({ chargeId: charge.id }, 'Refund already processed, skipping');
+      return;
+    }
+
+    // Deduct credits (allow negative balance if credits were already used)
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { creditBalance: true },
+      });
+
+      if (!user) {
+        logger.error({ userId, chargeId: charge.id }, 'User not found for refund');
+        return;
+      }
+
+      const newBalance = user.creditBalance - originalTransaction.amount;
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { creditBalance: newBalance },
+      });
+
+      await tx.creditTransaction.create({
+        data: {
+          userId,
+          type: 'REFUND',
+          status: 'COMPLETED',
+          amount: -originalTransaction.amount,
+          balanceAfter: newBalance,
+          stripePaymentId: charge.id,
+          description: `Refund: ${originalTransaction.description}`,
+        },
+      });
+
+      // Mark original transaction as refunded
+      await tx.creditTransaction.update({
+        where: { id: originalTransaction.id },
+        data: { status: 'REFUNDED' },
+      });
+    });
+
+    logger.info({ chargeId: charge.id, userId, amount: originalTransaction.amount }, 'Refund processed, credits deducted');
   }
 
   async createBillingPortalSession(userId: string, returnUrl: string) {

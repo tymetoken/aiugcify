@@ -3,6 +3,7 @@ import { creditsController } from '../controllers/credits.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { validate, schemas } from '../middleware/validation.middleware.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
+import { paymentRateLimit } from '../middleware/rate-limit.middleware.js';
 
 export const creditsRoutes = Router();
 
@@ -18,6 +19,7 @@ creditsRoutes.get(
 creditsRoutes.post(
   '/checkout',
   asyncHandler(authMiddleware),
+  paymentRateLimit,
   validate(schemas.checkout),
   asyncHandler(creditsController.createCheckout)
 );
@@ -44,6 +46,7 @@ creditsRoutes.get(
 creditsRoutes.post(
   '/subscription/checkout',
   asyncHandler(authMiddleware),
+  paymentRateLimit,
   validate(schemas.subscriptionCheckout),
   asyncHandler(creditsController.createSubscriptionCheckout)
 );
@@ -63,6 +66,7 @@ creditsRoutes.post(
 creditsRoutes.post(
   '/subscription/change-plan',
   asyncHandler(authMiddleware),
+  paymentRateLimit,
   validate(schemas.changePlan),
   asyncHandler(creditsController.changeSubscriptionPlan)
 );
@@ -70,6 +74,8 @@ creditsRoutes.post(
 // Complete checkout session (called from success page)
 creditsRoutes.post(
   '/checkout/complete/:sessionId',
+  asyncHandler(authMiddleware),
+  validate(schemas.sessionIdParam, 'params'),
   asyncHandler(creditsController.completeCheckout)
 );
 
@@ -83,5 +89,6 @@ creditsRoutes.post(
 creditsRoutes.get(
   '/billing/invoices',
   asyncHandler(authMiddleware),
+  validate(schemas.invoiceQuery, 'query'),
   asyncHandler(creditsController.getInvoices)
 );

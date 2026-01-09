@@ -6,7 +6,7 @@ export function Header() {
   const { currentPage, setPage } = useUIStore();
 
   return (
-    <header className="glass sticky top-0 z-50 px-4 py-3">
+    <header className="sticky top-0 z-50 px-4 py-3 bg-white/80 backdrop-blur-md border-b border-white/50">
       <div className="flex items-center justify-between">
         <button
           onClick={() => setPage('dashboard')}
