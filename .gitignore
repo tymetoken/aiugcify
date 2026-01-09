@@ -46,6 +46,8 @@ apps/api/prisma/*.db
 tmp/
 temp/
 .cache/
+*.timestamp-*.mjs
+test-checkout.js
 
 # Windows reserved names
 nul

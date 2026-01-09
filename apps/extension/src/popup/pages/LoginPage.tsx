@@ -6,29 +6,31 @@ interface LoginPageProps {
   onRegister: () => void;
 }
 
-const SAVED_CREDENTIALS_KEY = 'aiugcify_saved_credentials';
+// Only store email for convenience - NEVER store passwords
+const SAVED_EMAIL_KEY = 'aiugcify_saved_email';
 
 export function LoginPage({ onRegister }: LoginPageProps) {
   const { login, googleLogin, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { setPage } = useUIStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
 
-  // Load saved credentials on mount
+  // Load saved email on mount (never passwords)
   useEffect(() => {
+    // Clear any legacy credentials that stored passwords
+    localStorage.removeItem('aiugcify_saved_credentials');
+
     try {
-      const saved = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-      if (saved) {
-        const { email: savedEmail, password: savedPassword } = JSON.parse(saved);
-        setEmail(savedEmail || '');
-        setPassword(savedPassword || '');
-        setRememberMe(true);
+      const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY);
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberEmail(true);
       }
     } catch {
-      // Ignore parsing errors
+      // Ignore errors
     }
   }, []);
 
@@ -47,7 +49,10 @@ export function LoginPage({ onRegister }: LoginPageProps) {
     try {
       const redirectUrl = chrome.identity.getRedirectURL();
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const nonce = Math.random().toString(36).substring(2);
+      // Use cryptographically secure random nonce
+      const nonceArray = new Uint8Array(32);
+      crypto.getRandomValues(nonceArray);
+      const nonce = Array.from(nonceArray, b => b.toString(16).padStart(2, '0')).join('');
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       authUrl.searchParams.set('client_id', clientId);
       authUrl.searchParams.set('redirect_uri', redirectUrl);
@@ -94,11 +99,11 @@ export function LoginPage({ onRegister }: LoginPageProps) {
     clearError();
     setGoogleError('');
 
-    // Save or remove credentials based on rememberMe
-    if (rememberMe) {
-      localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify({ email, password }));
+    // Save or remove email based on rememberEmail (never save passwords)
+    if (rememberEmail) {
+      localStorage.setItem(SAVED_EMAIL_KEY, email);
     } else {
-      localStorage.removeItem(SAVED_CREDENTIALS_KEY);
+      localStorage.removeItem(SAVED_EMAIL_KEY);
     }
 
     try {
@@ -110,17 +115,20 @@ export function LoginPage({ onRegister }: LoginPageProps) {
 
   return (
     <div className="min-h-[480px] flex flex-col relative overflow-hidden">
-      {/* Background gradient - subtle slate to teal */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900" />
+      {/* Background gradient - softer, more refined */}
+      <div className="absolute inset-0 bg-gradient-to-b from-primary-500 via-primary-600 to-primary-700" />
 
-      {/* Decorative circles - subtle and refined */}
-      <div className="absolute -top-16 -right-16 w-48 h-48 bg-accent-500/10 rounded-full blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-accent-400/10 rounded-full blur-3xl" />
+      {/* Radial overlay for luminous top highlight */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.15)_0%,_transparent_60%)]" />
+
+      {/* Decorative circles - larger, softer ambient glow */}
+      <div className="absolute -top-20 -right-20 w-64 h-64 bg-accent-500/8 rounded-full blur-3xl" />
+      <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-primary-400/10 rounded-full blur-3xl" />
 
       {/* Content */}
-      <div className="relative flex-1 flex flex-col items-center justify-center p-4 z-10">
+      <div className="relative flex-1 flex flex-col items-center justify-center p-6 z-10">
         {/* Logo - Compact */}
-        <div className="animate-fade-in-up mb-4 text-center">
+        <div className="animate-fade-in-up mb-6 text-center">
           <div className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-glow-lg border border-white/20">
             <div className="w-10 h-10 bg-gradient-to-br from-white to-white/80 rounded-xl flex items-center justify-center">
               <span className="gradient-text font-black text-lg">AI</span>
@@ -132,8 +140,8 @@ export function LoginPage({ onRegister }: LoginPageProps) {
 
         {/* Login Form */}
         <div className="w-full max-w-sm animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="glass rounded-2xl p-4 shadow-soft-lg">
-            <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="glass rounded-2xl p-5 shadow-soft-lg">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Input */}
               <div>
                 <label className="block text-xs font-medium text-dark-700 mb-1">
@@ -164,17 +172,17 @@ export function LoginPage({ onRegister }: LoginPageProps) {
                 />
               </div>
 
-              {/* Remember Me */}
+              {/* Remember Email */}
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  id="rememberEmail"
+                  checked={rememberEmail}
+                  onChange={(e) => setRememberEmail(e.target.checked)}
                   className="w-3.5 h-3.5 rounded border-dark-300 text-accent-500 focus:ring-accent-500 focus:ring-offset-0 cursor-pointer"
                 />
-                <label htmlFor="rememberMe" className="ml-2 text-xs text-dark-600 cursor-pointer select-none">
-                  Remember me
+                <label htmlFor="rememberEmail" className="ml-2 text-xs text-dark-600 cursor-pointer select-none">
+                  Remember email
                 </label>
               </div>
 
@@ -206,7 +214,7 @@ export function LoginPage({ onRegister }: LoginPageProps) {
             </form>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 my-3">
+            <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-dark-200" />
               <span className="text-xs text-dark-400">or continue with</span>
               <div className="flex-1 h-px bg-dark-200" />
@@ -233,7 +241,7 @@ export function LoginPage({ onRegister }: LoginPageProps) {
             </button>
 
             {/* Register Link */}
-            <p className="text-center text-xs text-dark-500 mt-3">
+            <p className="text-center text-xs text-dark-500 mt-4">
               Don&apos;t have an account?{' '}
               <button
                 onClick={onRegister}

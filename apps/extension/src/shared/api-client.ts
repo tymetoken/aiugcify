@@ -17,7 +17,8 @@ import type {
   PaginationMeta,
 } from '@aiugcify/shared-types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+// MUST use HTTPS for production security - never fallback to HTTP
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://aiugcifyapi-production.up.railway.app/api/v1';
 
 class ApiClient {
   private accessToken: string | null = null;

@@ -1,5 +1,12 @@
 // Background service worker for AI UGCify Chrome Extension
 
+// Default API URL - MUST be HTTPS for production security
+// Environment variable should be set, but fallback to production URL for safety
+const DEFAULT_API_URL = 'https://aiugcifyapi-production.up.railway.app/api/v1';
+
+// Track active script generation
+let isGeneratingScript = false;
+
 // Listen for installation
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
@@ -29,6 +36,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'SET_AUTH_TOKEN':
       setAuthToken(message.data).then(sendResponse);
       return true;
+
+    case 'GENERATE_SCRIPT':
+      generateScriptInBackground(message.data).then(sendResponse);
+      return true; // Keep channel open for async response
+
+    case 'CHECK_SCRIPT_GENERATION_STATUS':
+      sendResponse({ isGenerating: isGeneratingScript });
+      return false;
 
     case 'VIDEO_COMPLETED':
       console.log('[AI UGCify] Video completed:', message.data);
@@ -135,3 +150,137 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 setInterval(() => {
   // Just a heartbeat to prevent service worker from dying
 }, 20000);
+
+// Generate script in background - continues even if popup closes
+async function generateScriptInBackground(data: {
+  productData: unknown;
+  videoStyle: string;
+  apiBaseUrl?: string;
+  options?: {
+    tone?: string;
+    targetDuration?: number;
+    additionalNotes?: string;
+  };
+}): Promise<{ success: boolean; result?: unknown; error?: string }> {
+  if (isGeneratingScript) {
+    return { success: false, error: 'Script generation already in progress' };
+  }
+
+  isGeneratingScript = true;
+  console.log('[AI UGCify] Starting background script generation');
+
+  // Use provided API URL or default
+  const apiUrl = data.apiBaseUrl || DEFAULT_API_URL;
+  console.log('[AI UGCify] Using API URL:', apiUrl);
+
+  // Update video-storage to show generation is in progress
+  await updateVideoStorage({
+    isGeneratingScript: true,
+    scriptGenerationStep: 1,
+    error: null,
+    currentScript: null,
+  });
+
+  // Simulate progress steps
+  const progressInterval = setInterval(async () => {
+    const storage = await chrome.storage.local.get(['video-storage']);
+    if (storage['video-storage']) {
+      try {
+        const storageData = JSON.parse(storage['video-storage']);
+        const currentStep = storageData.state?.scriptGenerationStep || 1;
+        if (currentStep < 3 && storageData.state?.isGeneratingScript) {
+          await updateVideoStorage({ scriptGenerationStep: currentStep + 1 });
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, 2500);
+
+  try {
+    // Get auth token
+    const { token } = await getAuthToken();
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    // Prepare request body (exclude apiBaseUrl from what we send to API)
+    const requestBody = {
+      productData: data.productData,
+      videoStyle: data.videoStyle,
+      options: data.options,
+    };
+
+    // Make API request
+    const response = await fetch(`${apiUrl}/videos/generate-script`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    clearInterval(progressInterval);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Script generation failed');
+    }
+
+    const result = await response.json();
+    const scriptData = result.data;
+
+    console.log('[AI UGCify] Script generation completed:', scriptData.videoId);
+
+    // Update storage with completed script
+    await updateVideoStorage({
+      currentScript: scriptData,
+      editedScript: scriptData.script,
+      isGeneratingScript: false,
+      scriptGenerationStep: 0,
+      isLoading: false,
+    });
+
+    isGeneratingScript = false;
+    return { success: true, result: scriptData };
+  } catch (error) {
+    clearInterval(progressInterval);
+    const errorMessage = (error as Error).message;
+    console.error('[AI UGCify] Script generation failed:', errorMessage);
+
+    // Update storage with error
+    await updateVideoStorage({
+      error: errorMessage,
+      isGeneratingScript: false,
+      scriptGenerationStep: 0,
+      isLoading: false,
+    });
+
+    isGeneratingScript = false;
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Helper to update video storage state
+async function updateVideoStorage(updates: Record<string, unknown>): Promise<void> {
+  const storage = await chrome.storage.local.get(['video-storage']);
+  let data = { state: {} };
+
+  if (storage['video-storage']) {
+    try {
+      data = JSON.parse(storage['video-storage']);
+    } catch {
+      // Use default
+    }
+  }
+
+  data.state = {
+    ...data.state,
+    ...updates,
+  };
+
+  await chrome.storage.local.set({
+    'video-storage': JSON.stringify(data),
+  });
+}

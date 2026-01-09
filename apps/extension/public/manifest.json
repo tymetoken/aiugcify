@@ -12,15 +12,18 @@
     "identity"
   ],
   "oauth2": {
-    "client_id": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+    "client_id": "716550384496-fdlk62g3rfiol75f62uvppdus6t7hg5j.apps.googleusercontent.com",
     "scopes": ["openid", "email", "profile"]
   },
   "host_permissions": [
     "https://*.tiktok.com/*",
     "https://api.aiugcify.com/*",
-    "http://localhost:3000/*",
+    "https://aiugcifyapi-production.up.railway.app/*",
     "https://*.cloudinary.com/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.aiugcify.com https://aiugcifyapi-production.up.railway.app https://*.cloudinary.com https://accounts.google.com"
+  },
   "background": {
     "service_worker": "src/background/service-worker.ts",
     "type": "module"

@@ -7,7 +7,8 @@ interface LoginModalProps {
   onSuccess: () => void;
 }
 
-const SAVED_CREDENTIALS_KEY = 'aiugcify_saved_credentials';
+// Only store email for convenience - NEVER store passwords
+const SAVED_EMAIL_KEY = 'aiugcify_saved_email';
 
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const { login, register, googleLogin, isLoading, error, clearError, isAuthenticated } = useAuthStore();
@@ -17,21 +18,22 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  // Load saved credentials on mount
+  // Load saved email on mount (never passwords)
   useEffect(() => {
+    // Clear any legacy credentials that stored passwords
+    localStorage.removeItem('aiugcify_saved_credentials');
+
     try {
-      const saved = localStorage.getItem(SAVED_CREDENTIALS_KEY);
-      if (saved) {
-        const { email: savedEmail, password: savedPassword } = JSON.parse(saved);
-        setEmail(savedEmail || '');
-        setPassword(savedPassword || '');
-        setRememberMe(true);
+      const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY);
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberEmail(true);
       }
     } catch {
-      // Ignore parsing errors
+      // Ignore errors
     }
   }, []);
 
@@ -53,7 +55,10 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
       // Build the Google OAuth URL for ID token
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const nonce = Math.random().toString(36).substring(2);
+      // Use cryptographically secure random nonce
+      const nonceArray = new Uint8Array(32);
+      crypto.getRandomValues(nonceArray);
+      const nonce = Array.from(nonceArray, b => b.toString(16).padStart(2, '0')).join('');
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       authUrl.searchParams.set('client_id', clientId);
       authUrl.searchParams.set('redirect_uri', redirectUrl);
@@ -114,11 +119,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       }
       await register(email, password, name || undefined);
     } else {
-      // Save or remove credentials based on rememberMe
-      if (rememberMe) {
-        localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify({ email, password }));
+      // Save or remove email based on rememberEmail (never save passwords)
+      if (rememberEmail) {
+        localStorage.setItem(SAVED_EMAIL_KEY, email);
       } else {
-        localStorage.removeItem(SAVED_CREDENTIALS_KEY);
+        localStorage.removeItem(SAVED_EMAIL_KEY);
       }
       await login(email, password);
     }
@@ -215,13 +220,13 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             <div className="flex items-center">
               <input
                 type="checkbox"
-                id="rememberMeModal"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                id="rememberEmailModal"
+                checked={rememberEmail}
+                onChange={(e) => setRememberEmail(e.target.checked)}
                 className="w-4 h-4 rounded border-dark-300 text-accent-500 focus:ring-accent-500 focus:ring-offset-0 cursor-pointer"
               />
-              <label htmlFor="rememberMeModal" className="ml-2 text-sm text-dark-600 cursor-pointer select-none">
-                Remember me
+              <label htmlFor="rememberEmailModal" className="ml-2 text-sm text-dark-600 cursor-pointer select-none">
+                Remember email
               </label>
             </div>
           )}
