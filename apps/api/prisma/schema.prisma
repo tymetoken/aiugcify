@@ -22,6 +22,10 @@ model User {
   updatedAt             DateTime  @updatedAt
   lastLoginAt           DateTime?
 
+  // Security: Account lockout after failed login attempts
+  failedLoginAttempts   Int       @default(0)
+  lockedUntil           DateTime?
+
   creditTransactions CreditTransaction[]
   videos             Video[]
   refreshTokens      RefreshToken[]

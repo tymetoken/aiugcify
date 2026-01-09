@@ -10,6 +10,8 @@ import type { UserPublic, AuthTokens } from '@aiugcify/shared-types';
 const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 
 const SALT_ROUNDS = 12;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MINUTES = 15;
 
 export interface RegisterInput {
   email: string;
@@ -102,6 +104,13 @@ class AuthService {
       throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
+    // SECURITY: Check if account is locked
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const remainingMinutes = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      logger.warn({ userId: user.id, lockedUntil: user.lockedUntil }, 'Login attempt on locked account');
+      throw new AppError(423, ErrorCodes.ACCOUNT_LOCKED, `Account is temporarily locked. Try again in ${remainingMinutes} minutes.`);
+    }
+
     // Check if user was created via Google Auth (no password set)
     if (user.passwordHash.startsWith('google:')) {
       throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'This account uses Google Sign-In. Please use "Continue with Google" to log in.');
@@ -118,13 +127,34 @@ class AuthService {
     }
 
     if (!isValidPassword) {
+      // SECURITY: Increment failed attempts and potentially lock account
+      const newFailedAttempts = (user.failedLoginAttempts || 0) + 1;
+      const shouldLock = newFailedAttempts >= MAX_FAILED_ATTEMPTS;
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: newFailedAttempts,
+          lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000) : null,
+        },
+      });
+
+      if (shouldLock) {
+        logger.warn({ userId: user.id, attempts: newFailedAttempts }, 'Account locked due to too many failed attempts');
+        throw new AppError(423, ErrorCodes.ACCOUNT_LOCKED, `Too many failed attempts. Account locked for ${LOCKOUT_DURATION_MINUTES} minutes.`);
+      }
+
       throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
-    // Update last login
+    // SECURITY: Reset failed attempts on successful login
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+      data: {
+        lastLoginAt: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
     });
 
     // Generate tokens

@@ -72,9 +72,10 @@ creditsRoutes.post(
 );
 
 // Complete checkout session (called from success page)
+// SECURITY: No auth required - validates session with Stripe directly
+// Actual credit allocation is handled by webhooks for security
 creditsRoutes.post(
   '/checkout/complete/:sessionId',
-  asyncHandler(authMiddleware),
   validate(schemas.sessionIdParam, 'params'),
   asyncHandler(creditsController.completeCheckout)
 );

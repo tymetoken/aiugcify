@@ -26,11 +26,17 @@ export function generateRefreshToken(payload: TokenPayload): string {
 }
 
 export function verifyAccessToken(token: string): DecodedToken {
-  return jwt.verify(token, config.JWT_ACCESS_SECRET) as DecodedToken;
+  // SECURITY: Explicitly specify algorithm to prevent algorithm confusion attacks
+  return jwt.verify(token, config.JWT_ACCESS_SECRET, {
+    algorithms: ['HS256'],
+  }) as DecodedToken;
 }
 
 export function verifyRefreshToken(token: string): DecodedToken {
-  return jwt.verify(token, config.JWT_REFRESH_SECRET) as DecodedToken;
+  // SECURITY: Explicitly specify algorithm to prevent algorithm confusion attacks
+  return jwt.verify(token, config.JWT_REFRESH_SECRET, {
+    algorithms: ['HS256'],
+  }) as DecodedToken;
 }
 
 export function generateTokens(payload: TokenPayload) {

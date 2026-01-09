@@ -28,6 +28,12 @@ class AuthController {
     return sendNoContent(res);
   }
 
+  async logoutAll(req: Request, res: Response) {
+    const { user } = req as AuthenticatedRequest;
+    await authService.logoutAll(user.id);
+    return sendNoContent(res);
+  }
+
   async me(req: Request, res: Response) {
     const { user } = req as AuthenticatedRequest;
     const userData = await authService.getUser(user.id);

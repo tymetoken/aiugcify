@@ -27,13 +27,14 @@ const createStore = () => {
 };
 
 // General API rate limit
+// SECURITY: Never completely disable rate limiting, even in development
 export const apiRateLimit = rateLimit({
   windowMs: parseInt(config.RATE_LIMIT_WINDOW_MS, 10),
   max: isDevelopment ? 10000 : parseInt(config.RATE_LIMIT_MAX_REQUESTS, 10), // Very high limit in dev
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
-  skip: isDevelopment ? () => true : undefined, // Skip entirely in development
+  // SECURITY: Removed skip parameter - rate limiting always active
   message: {
     success: false,
     error: {
@@ -50,14 +51,14 @@ export const apiRateLimit = rateLimit({
 });
 
 // Stricter limit for auth endpoints (prevent brute force)
-// SECURITY: Always enforced in production to prevent credential stuffing attacks
+// SECURITY: Always enforced to prevent credential stuffing attacks
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 10000 : 100, // Very high in dev, 100 in prod per 15 min
+  max: isDevelopment ? 1000 : 100, // Higher in dev, 100 in prod per 15 min
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
-  skip: isDevelopment ? () => true : undefined, // Skip in development
+  // SECURITY: Removed skip parameter - rate limiting always active
   skipSuccessfulRequests: true,
   message: {
     success: false,

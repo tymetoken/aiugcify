@@ -2,6 +2,14 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 
+// SECURITY: Common passwords that should be rejected
+const COMMON_PASSWORDS = [
+  'password', 'password1', 'password123', '12345678', '123456789',
+  'qwerty123', 'letmein', 'welcome', 'admin123', 'abc12345',
+  'monkey123', 'master123', 'dragon123', 'shadow123', 'sunshine1',
+  'princess1', 'football1', 'baseball1', 'iloveyou1', 'trustno1',
+];
+
 type RequestLocation = 'body' | 'query' | 'params';
 
 export function validate<T extends z.ZodSchema>(
@@ -27,17 +35,26 @@ export function validate<T extends z.ZodSchema>(
   };
 }
 
+// SECURITY: Strong password validation schema
+const strongPassword = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password must not exceed 128 characters') // Prevent bcrypt DoS
+  .regex(/[A-Z]/, 'Password must contain an uppercase letter')
+  .regex(/[a-z]/, 'Password must contain a lowercase letter')
+  .regex(/[0-9]/, 'Password must contain a number')
+  .regex(/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\\/`~]/, 'Password must contain a special character')
+  .refine(
+    (password) => !COMMON_PASSWORDS.includes(password.toLowerCase()),
+    'Password is too common. Please choose a more secure password.'
+  );
+
 // Common validation schemas
 export const schemas = {
   // Auth schemas
   register: z.object({
     email: z.string().email('Invalid email format'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Password must contain an uppercase letter')
-      .regex(/[a-z]/, 'Password must contain a lowercase letter')
-      .regex(/[0-9]/, 'Password must contain a number'),
+    password: strongPassword,
     name: z.string().min(2).max(100).optional(),
   }),
 

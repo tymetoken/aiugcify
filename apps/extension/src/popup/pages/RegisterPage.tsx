@@ -32,8 +32,29 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
       return;
     }
 
+    // Validate password strength
     if (password.length < 8) {
       setValidationError('Password must be at least 8 characters');
+      return;
+    }
+    if (password.length > 128) {
+      setValidationError('Password must not exceed 128 characters');
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setValidationError('Password must contain an uppercase letter');
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setValidationError('Password must contain a lowercase letter');
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      setValidationError('Password must contain a number');
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\\/`~]/.test(password)) {
+      setValidationError('Password must contain a special character');
       return;
     }
 
@@ -122,13 +143,16 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
                   </div>
                   <input
                     type="password"
-                    placeholder="Min. 8 characters"
+                    placeholder="Create a strong password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="w-full pl-9 pr-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
                   />
                 </div>
+                <p className="mt-1 text-[10px] text-dark-400">
+                  8+ chars with uppercase, lowercase, number & special character
+                </p>
               </div>
 
               {/* Confirm Password Input */}

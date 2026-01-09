@@ -64,17 +64,18 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   }
 
   // Handle Prisma errors
+  // SECURITY: Don't expose database error codes to clients
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     logger.error({ prismaCode: err.code, meta: err.meta }, 'Prisma known error');
-    return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, `Database error: ${err.code}`);
+    return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, 'A database error occurred');
   }
   if (err instanceof Prisma.PrismaClientInitializationError) {
     logger.error({ message: err.message }, 'Prisma initialization error');
-    return sendError(res, 503, ErrorCodes.INTERNAL_ERROR, 'Database connection failed');
+    return sendError(res, 503, ErrorCodes.INTERNAL_ERROR, 'Service temporarily unavailable');
   }
   if (err instanceof Prisma.PrismaClientValidationError) {
     logger.error({ message: err.message }, 'Prisma validation error');
-    return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, 'Database query validation failed');
+    return sendError(res, 500, ErrorCodes.INTERNAL_ERROR, 'A database error occurred');
   }
 
   // Handle unknown errors

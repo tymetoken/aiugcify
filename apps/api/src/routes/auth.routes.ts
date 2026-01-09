@@ -29,6 +29,13 @@ authRoutes.post(
 
 authRoutes.post('/logout', asyncHandler(authController.logout));
 
+// SECURITY: Logout from all sessions (requires authentication)
+authRoutes.post(
+  '/logout-all',
+  asyncHandler(authMiddleware),
+  asyncHandler(authController.logoutAll)
+);
+
 authRoutes.post(
   '/google',
   authRateLimit,

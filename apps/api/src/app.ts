@@ -11,6 +11,15 @@ import { creditsRoutes } from './routes/credits.routes.js';
 import { videosRoutes } from './routes/videos.routes.js';
 import { webhooksRoutes } from './routes/webhooks.routes.js';
 
+// SECURITY: Helper to set security headers for static HTML pages
+function setSecurityHeaders(res: express.Response) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+}
+
 export function createApp() {
   const app = express();
 
@@ -24,6 +33,7 @@ export function createApp() {
 
   // Payment success/cancel pages for Stripe redirects
   app.get('/checkout/success', (_req, res) => {
+    setSecurityHeaders(res);
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -107,6 +117,7 @@ export function createApp() {
   });
 
   app.get('/checkout/cancelled', (_req, res) => {
+    setSecurityHeaders(res);
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -136,6 +147,7 @@ export function createApp() {
 
   // Privacy Policy page (required for Chrome Web Store)
   app.get('/privacy', (_req, res) => {
+    setSecurityHeaders(res);
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -275,6 +287,7 @@ export function createApp() {
 
   // Terms of Service page
   app.get('/terms', (_req, res) => {
+    setSecurityHeaders(res);
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
