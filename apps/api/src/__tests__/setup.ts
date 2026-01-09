@@ -61,7 +61,7 @@ vi.mock('stripe', () => {
         }),
       },
       webhooks: {
-        constructEvent: vi.fn().mockImplementation((payload, sig, secret) => {
+        constructEvent: vi.fn().mockImplementation((payload, _sig, _secret) => {
           const parsed = JSON.parse(payload.toString());
           return {
             id: 'evt_test123',

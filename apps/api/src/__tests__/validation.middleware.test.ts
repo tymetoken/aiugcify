@@ -2,7 +2,7 @@
  * Validation Middleware Unit Tests
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { validate, schemas } from '../middleware/validation.middleware.js';
 import type { Request, Response, NextFunction } from 'express';
 
