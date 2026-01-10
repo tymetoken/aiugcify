@@ -283,11 +283,13 @@ class AuthService {
       }
 
       const { email, name, sub: googleId } = payload;
+      logger.info({ email, name, googleId: googleId?.substring(0, 10) + '...' }, 'Step 1: Extracted payload data');
 
       // Check if user exists
       let user = await prisma.user.findUnique({
         where: { email: email.toLowerCase() },
       });
+      logger.info({ userExists: !!user, email }, 'Step 2: User lookup complete');
 
       if (user) {
         // Existing user - log them in
@@ -295,9 +297,11 @@ class AuthService {
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         });
+        logger.info({ userId: user.id }, 'Step 3a: Updated existing user lastLoginAt');
       } else {
         // New user - create account with free credits
         const freeCredits = parseInt(config.FREE_CREDITS_ON_SIGNUP, 10);
+        logger.info({ freeCredits }, 'Step 3b: Creating new user');
 
         user = await prisma.user.create({
           data: {
@@ -307,6 +311,7 @@ class AuthService {
             creditBalance: freeCredits,
           },
         });
+        logger.info({ userId: user.id }, 'Step 3c: User created');
 
         // Create credit transaction for free signup credits
         if (freeCredits > 0) {
@@ -321,12 +326,14 @@ class AuthService {
             },
           });
 
-          logger.info({ userId: user.id, credits: freeCredits }, 'Free signup credits granted (Google auth)');
+          logger.info({ userId: user.id, credits: freeCredits }, 'Step 3d: Free signup credits granted');
         }
       }
 
       // Generate tokens
+      logger.info('Step 4: Generating tokens');
       const tokens = generateTokens({ userId: user.id, email: user.email });
+      logger.info('Step 5: Tokens generated');
 
       // Store refresh token
       await prisma.refreshToken.create({
@@ -336,6 +343,7 @@ class AuthService {
           expiresAt: getRefreshTokenExpiry(),
         },
       });
+      logger.info('Step 6: Refresh token stored');
 
       logger.info({ email: user.email }, 'Google auth completed successfully');
 
