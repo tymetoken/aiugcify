@@ -271,44 +271,6 @@ export function GeneratingPage() {
         </h2>
         <p className="text-sm text-dark-500 mb-6">AI is crafting your video</p>
 
-        {/* Progress Bar */}
-        <div className="w-full max-w-xs mb-4">
-          <div className="h-2.5 bg-dark-100 rounded-full overflow-hidden shadow-inner relative">
-            {/* Animated progress fill */}
-            <div
-              className="h-full rounded-full transition-all duration-700 relative overflow-hidden"
-              style={{
-                width: `${progressPercent}%`,
-                background: 'linear-gradient(90deg, #7c3aed, #8b5cf6, #a78bfa, #f97316, #fb923c, #7c3aed)',
-                backgroundSize: '200% 100%',
-                animation: 'gradient-flow 3s ease infinite',
-                boxShadow: '0 0 12px rgba(139,92,246,0.5), 0 0 4px rgba(249,115,22,0.4)',
-              }}
-            >
-              {/* Shimmer sweep overlay */}
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
-                  animation: 'shimmer-sweep 2s ease-in-out infinite',
-                }}
-              />
-            </div>
-            {/* Leading edge glow */}
-            {progressPercent > 0 && (
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full transition-all duration-700"
-                style={{
-                  left: `calc(${progressPercent}% - 6px)`,
-                  background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(249,115,22,0.8) 40%, transparent 70%)',
-                  boxShadow: '0 0 8px rgba(249,115,22,0.8), 0 0 16px rgba(139,92,246,0.5)',
-                  animation: 'pulse 1.5s ease-in-out infinite',
-                }}
-              />
-            )}
-          </div>
-        </div>
-
         {/* Stage Indicators */}
         <div className="flex items-center gap-6 mb-6">
           {GENERATION_STAGES.map((stage, index) => (
