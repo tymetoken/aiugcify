@@ -30,7 +30,7 @@ const createStore = () => {
 // SECURITY: Never completely disable rate limiting, even in development
 export const apiRateLimit = rateLimit({
   windowMs: parseInt(config.RATE_LIMIT_WINDOW_MS, 10),
-  max: isDevelopment ? 10000 : parseInt(config.RATE_LIMIT_MAX_REQUESTS, 10), // Very high limit in dev
+  max: isDevelopment ? 10000 : 1000, // 1000 requests per 15 min in production
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -54,17 +54,17 @@ export const apiRateLimit = rateLimit({
 // SECURITY: Always enforced to prevent credential stuffing attacks
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100, // Higher in dev, 100 in prod per 15 min
+  max: isDevelopment ? 1000 : 50, // 50 failed attempts per 15 min in prod
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   // SECURITY: Removed skip parameter - rate limiting always active
-  skipSuccessfulRequests: true,
+  skipSuccessfulRequests: true, // Only count failed login attempts
   message: {
     success: false,
     error: {
       code: ErrorCodes.RATE_LIMIT_EXCEEDED,
-      message: 'Too many login attempts, please try again later',
+      message: 'Too many login attempts, please try again in 15 minutes',
     },
   },
 });
