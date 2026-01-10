@@ -54,7 +54,7 @@ export const apiRateLimit = rateLimit({
 // SECURITY: Always enforced to prevent credential stuffing attacks
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 50, // 50 failed attempts per 15 min in prod
+  max: isDevelopment ? 1000 : 200, // 200 failed attempts per 15 min in prod
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
