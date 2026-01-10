@@ -242,104 +242,121 @@ class AuthService {
   }
 
   async googleAuth(idToken: string): Promise<AuthResult> {
-    logger.info({
-      hasClientId: !!config.GOOGLE_CLIENT_ID,
-      clientIdPrefix: config.GOOGLE_CLIENT_ID?.substring(0, 20) + '...',
-      idTokenLength: idToken?.length || 0,
-    }, 'Google auth request received');
-
-    // Check if Google OAuth is configured
-    if (!config.GOOGLE_CLIENT_ID) {
-      logger.error('GOOGLE_CLIENT_ID is not configured');
-      throw new AppError(503, ErrorCodes.SERVICE_UNAVAILABLE, 'Google sign-in is not configured');
-    }
-
-    // Create OAuth2Client with verified client ID
-    const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
-
-    // Verify the Google ID token
-    let payload;
     try {
-      logger.info('Verifying Google ID token...');
-      const ticket = await googleClient.verifyIdToken({
-        idToken,
-        audience: config.GOOGLE_CLIENT_ID,
+      logger.info({
+        hasClientId: !!config.GOOGLE_CLIENT_ID,
+        clientIdPrefix: config.GOOGLE_CLIENT_ID?.substring(0, 20) + '...',
+        idTokenLength: idToken?.length || 0,
+      }, 'Google auth request received');
+
+      // Check if Google OAuth is configured
+      if (!config.GOOGLE_CLIENT_ID) {
+        logger.error('GOOGLE_CLIENT_ID is not configured');
+        throw new AppError(503, ErrorCodes.SERVICE_UNAVAILABLE, 'Google sign-in is not configured');
+      }
+
+      // Create OAuth2Client with verified client ID
+      const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
+
+      // Verify the Google ID token
+      let payload;
+      try {
+        logger.info('Verifying Google ID token...');
+        const ticket = await googleClient.verifyIdToken({
+          idToken,
+          audience: config.GOOGLE_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+        logger.info({ email: payload?.email }, 'Google token verified successfully');
+      } catch (error) {
+        const err = error as Error;
+        logger.error({
+          errorMessage: err.message,
+          errorName: err.name,
+          stack: err.stack?.substring(0, 500),
+        }, 'Google token verification failed');
+        throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token. Please try again.');
+      }
+
+      if (!payload || !payload.email) {
+        throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token payload');
+      }
+
+      const { email, name, sub: googleId } = payload;
+
+      // Check if user exists
+      let user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
       });
-      payload = ticket.getPayload();
-      logger.info({ email: payload?.email }, 'Google token verified successfully');
+
+      if (user) {
+        // Existing user - log them in
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
+      } else {
+        // New user - create account with free credits
+        const freeCredits = parseInt(config.FREE_CREDITS_ON_SIGNUP, 10);
+
+        user = await prisma.user.create({
+          data: {
+            email: email.toLowerCase(),
+            passwordHash: `google:${googleId}`, // Mark as Google auth user
+            name: name || null,
+            creditBalance: freeCredits,
+          },
+        });
+
+        // Create credit transaction for free signup credits
+        if (freeCredits > 0) {
+          await prisma.creditTransaction.create({
+            data: {
+              userId: user.id,
+              type: 'BONUS',
+              status: 'COMPLETED',
+              amount: freeCredits,
+              balanceAfter: freeCredits,
+              description: 'Free signup credits',
+            },
+          });
+
+          logger.info({ userId: user.id, credits: freeCredits }, 'Free signup credits granted (Google auth)');
+        }
+      }
+
+      // Generate tokens
+      const tokens = generateTokens({ userId: user.id, email: user.email });
+
+      // Store refresh token
+      await prisma.refreshToken.create({
+        data: {
+          token: tokens.refreshToken,
+          userId: user.id,
+          expiresAt: getRefreshTokenExpiry(),
+        },
+      });
+
+      logger.info({ email: user.email }, 'Google auth completed successfully');
+
+      return {
+        user: this.toPublicUser(user),
+        tokens,
+      };
     } catch (error) {
+      // Re-throw AppErrors as-is
+      if (error instanceof AppError) {
+        throw error;
+      }
+      // Convert any other errors to AppError with details
       const err = error as Error;
       logger.error({
         errorMessage: err.message,
         errorName: err.name,
-        stack: err.stack?.substring(0, 500),
-      }, 'Google token verification failed');
-      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token. Please try again.');
+        stack: err.stack,
+      }, 'Unexpected error in Google auth');
+      throw new AppError(500, ErrorCodes.INTERNAL_ERROR, 'Google sign-in failed. Please try again.');
     }
-
-    if (!payload || !payload.email) {
-      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token payload');
-    }
-
-    const { email, name, sub: googleId } = payload;
-
-    // Check if user exists
-    let user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (user) {
-      // Existing user - log them in
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      });
-    } else {
-      // New user - create account with free credits
-      const freeCredits = parseInt(config.FREE_CREDITS_ON_SIGNUP, 10);
-
-      user = await prisma.user.create({
-        data: {
-          email: email.toLowerCase(),
-          passwordHash: `google:${googleId}`, // Mark as Google auth user
-          name: name || null,
-          creditBalance: freeCredits,
-        },
-      });
-
-      // Create credit transaction for free signup credits
-      if (freeCredits > 0) {
-        await prisma.creditTransaction.create({
-          data: {
-            userId: user.id,
-            type: 'BONUS',
-            status: 'COMPLETED',
-            amount: freeCredits,
-            balanceAfter: freeCredits,
-            description: 'Free signup credits',
-          },
-        });
-
-        logger.info({ userId: user.id, credits: freeCredits }, 'Free signup credits granted (Google auth)');
-      }
-    }
-
-    // Generate tokens
-    const tokens = generateTokens({ userId: user.id, email: user.email });
-
-    // Store refresh token
-    await prisma.refreshToken.create({
-      data: {
-        token: tokens.refreshToken,
-        userId: user.id,
-        expiresAt: getRefreshTokenExpiry(),
-      },
-    });
-
-    return {
-      user: this.toPublicUser(user),
-      tokens,
-    };
   }
 
   async getUser(userId: string): Promise<UserPublic> {
