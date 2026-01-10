@@ -298,6 +298,15 @@ export const useVideoStore = create<VideoState>()(
 
         const poll = async () => {
           try {
+            // Wait for auth to be ready before making API calls
+            const authState = useAuthStore.getState();
+            if (!authState.accessToken) {
+              // Auth not ready yet, wait and retry
+              console.log('[VideoStore] Waiting for auth to be ready...');
+              setTimeout(poll, 1000);
+              return;
+            }
+
             const { video } = await apiClient.getVideo(videoId);
             set({ currentVideo: video });
 
