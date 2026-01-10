@@ -255,7 +255,7 @@ class KieService {
 
       // Log the raw state for debugging
       logger.info(
-        { jobId, rawState: data.state, hasResultJson: !!data.resultJson },
+        { jobId, rawState: data.state, hasResultJson: !!data.resultJson, failCode: data.failCode, failMsg: data.failMsg },
         'Kie.ai status check - raw response'
       );
 
@@ -263,7 +263,8 @@ class KieService {
       let mappedStatus: KieVideoJob['status'] = 'pending';
       if (data.state === 'completed' || data.state === 'success') {
         mappedStatus = 'completed';
-      } else if (data.state === 'failed') {
+      } else if (data.state === 'failed' || data.failCode || data.failMsg) {
+        // Mark as failed if state is failed OR if there's any error code/message
         mappedStatus = 'failed';
       } else if (data.state === 'processing') {
         mappedStatus = 'processing';
@@ -323,10 +324,12 @@ class KieService {
       }
 
       if (status.status === 'failed') {
+        const errorMsg = status.error || 'Video generation failed';
+        logger.error({ jobId, error: errorMsg }, 'Kie.ai video generation failed');
         throw new AppError(
           500,
           ErrorCodes.VIDEO_GENERATION_FAILED,
-          status.error || 'Video generation failed'
+          errorMsg
         );
       }
 

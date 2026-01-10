@@ -161,7 +161,9 @@ export const videoWorker = new Worker<VideoJobData>(
       const rawError = (error as Error).message.toLowerCase();
       let userFriendlyError = 'Video generation failed. Your credit has been refunded.';
 
-      if (rawError.includes('timed out') || rawError.includes('timeout')) {
+      if (rawError.includes('content polic') || rawError.includes('violate')) {
+        userFriendlyError = 'Content was flagged by AI safety filters. Please try a different product or script. Your credit has been refunded.';
+      } else if (rawError.includes('timed out') || rawError.includes('timeout')) {
         userFriendlyError = 'Video generation timed out. Your credit has been refunded.';
       } else if (rawError.includes('500') || rawError.includes('upstream') || rawError.includes('service')) {
         userFriendlyError = 'Video service temporarily unavailable. Your credit has been refunded.';
