@@ -498,6 +498,17 @@ export const useVideoStore = create<VideoState>()(
         // Check background generation status when popup reopens
         setTimeout(() => {
           state?.checkBackgroundGeneration();
+          // Reload videos when auth is ready
+          const checkAndLoadVideos = () => {
+            const authState = useAuthStore.getState();
+            if (authState.accessToken) {
+              state?.loadVideos();
+            } else {
+              // Wait for auth, retry in 500ms
+              setTimeout(checkAndLoadVideos, 500);
+            }
+          };
+          checkAndLoadVideos();
         }, 100);
       },
     }
