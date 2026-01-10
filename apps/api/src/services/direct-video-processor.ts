@@ -87,9 +87,9 @@ export async function processVideoDirect(input: ProcessVideoInput): Promise<void
       data: { soraJobId: kieJob.id },
     });
 
-    // Step 4: Poll for completion
+    // Step 4: Poll for completion (40 minutes max - Sora 2 can take 15-30 min)
     const videoResult = await kieService.pollUntilComplete(kieJob.id, {
-      maxAttempts: 120,
+      maxAttempts: 240,
       intervalMs: 10000,
     });
 

@@ -302,7 +302,8 @@ class KieService {
     jobId: string,
     options: PollOptions = {}
   ): Promise<KieVideoJob> {
-    const { maxAttempts = 120, intervalMs = 10000, onProgress } = options;
+    // Default: 40 minutes max (240 attempts × 10 seconds) - Sora 2 can take 15-30 min
+    const { maxAttempts = 240, intervalMs = 10000, onProgress } = options;
 
     let attempts = 0;
     let lastProgress = 0;
