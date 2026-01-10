@@ -155,46 +155,60 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center min-h-[480px]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 backdrop-blur-[1px]"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-xl animate-scale-in overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-accent-500 p-4 text-center">
-          <h2 className="text-lg font-bold text-white">
-            {mode === 'login' ? 'Sign in to continue' : 'Create an account'}
-          </h2>
-          <p className="text-sm text-white/80 mt-1">
-            {mode === 'login'
-              ? 'Log in to generate your UGC video'
-              : 'Sign up to start creating videos'}
-          </p>
+      {/* Modal Card */}
+      <div className="relative w-[calc(100%-16px)] max-w-[340px] mx-2 bg-white rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+        {/* Header with App Theme Gradient */}
+        <div className="relative bg-gradient-to-r from-primary-600 to-accent-500 px-4 py-3 overflow-hidden">
+          {/* Decorative glow */}
+          <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
+
+          <div className="relative text-center">
+            <h2 className="text-base font-bold text-white">
+              {mode === 'login' ? 'Welcome back' : 'Get started'}
+            </h2>
+            <p className="text-xs text-white/80 mt-0.5">
+              {mode === 'login'
+                ? 'Sign in to create your video'
+                : 'Create your free account'}
+            </p>
+          </div>
+
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-2.5 right-2.5 p-1 text-white/70 hover:text-white hover:bg-white/15 rounded-full transition-all"
+          >
+            <CloseIcon className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-3 space-y-2">
           {mode === 'register' && (
-            <div>
-              <label className="block text-xs font-medium text-dark-700 mb-1">
-                Name <span className="text-dark-400">(optional)</span>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-dark-600 uppercase tracking-wide">
+                Name <span className="text-dark-400 normal-case font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 placeholder="Your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                className="w-full px-3 py-1.5 bg-dark-50 border border-dark-200 rounded-lg text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all"
               />
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-medium text-dark-700 mb-1">
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-dark-600 uppercase tracking-wide">
               Email
             </label>
             <input
@@ -203,70 +217,72 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+              className="w-full px-3 py-1.5 bg-dark-50 border border-dark-200 rounded-lg text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-dark-700 mb-1">
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-dark-600 uppercase tracking-wide">
               Password
             </label>
             <input
               type="password"
-              placeholder={mode === 'register' ? 'Create a strong password' : 'Enter your password'}
+              placeholder={mode === 'register' ? 'Create password' : 'Your password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+              className="w-full px-3 py-1.5 bg-dark-50 border border-dark-200 rounded-lg text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all"
             />
             {mode === 'register' && (
-              <p className="mt-1 text-[10px] text-dark-400">
-                8+ chars with uppercase, lowercase, number & special character
+              <p className="text-[10px] text-dark-400 mt-0.5">
+                Min 8 chars • uppercase • lowercase • number • symbol
               </p>
             )}
           </div>
 
           {mode === 'register' && (
-            <div>
-              <label className="block text-xs font-medium text-dark-700 mb-1">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-dark-600 uppercase tracking-wide">
                 Confirm Password
               </label>
               <input
                 type="password"
-                placeholder="Confirm your password"
+                placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                className="w-full px-3 py-1.5 bg-dark-50 border border-dark-200 rounded-lg text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all"
               />
             </div>
           )}
 
           {mode === 'login' && (
-            <div className="flex items-center">
+            <label className="flex items-center gap-2 cursor-pointer group">
               <input
                 type="checkbox"
-                id="rememberEmailModal"
                 checked={rememberEmail}
                 onChange={(e) => setRememberEmail(e.target.checked)}
-                className="w-4 h-4 rounded border-dark-300 text-accent-500 focus:ring-accent-500 focus:ring-offset-0 cursor-pointer"
+                className="w-4 h-4 rounded-md border-dark-300 text-primary-600 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer transition-colors"
               />
-              <label htmlFor="rememberEmailModal" className="ml-2 text-sm text-dark-600 cursor-pointer select-none">
-                Remember email
-              </label>
-            </div>
+              <span className="text-[13px] text-dark-500 group-hover:text-dark-700 transition-colors select-none">
+                Remember my email
+              </span>
+            </label>
           )}
 
           {displayError && (
-            <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-xs text-red-600">{displayError}</p>
+            <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-100 rounded-lg">
+              <svg className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xs text-red-600 leading-tight">{displayError}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={isLoading || isGoogleLoading}
-            className="w-full py-2.5 px-4 bg-gradient-to-r from-primary-600 to-accent-500 text-white font-semibold rounded-xl shadow-lg shadow-accent-500/20 hover:shadow-xl hover:shadow-accent-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
+            className="w-full py-2 px-4 bg-gradient-to-r from-primary-600 to-accent-500 text-white font-semibold rounded-xl shadow-lg shadow-accent-500/20 hover:shadow-xl hover:shadow-accent-500/30 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -281,12 +297,12 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
           </button>
 
           {/* Divider */}
-          <div className="relative my-4">
+          <div className="relative py-0.5">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-dark-200" />
             </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 text-dark-400">or continue with</span>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-2 text-[10px] text-dark-400 uppercase tracking-wider">or</span>
             </div>
           </div>
 
@@ -295,7 +311,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isLoading || isGoogleLoading}
-            className="w-full py-2.5 px-4 bg-white border border-dark-200 text-dark-700 font-medium rounded-xl hover:bg-dark-50 hover:border-dark-300 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+            className="w-full py-2 px-4 bg-white border border-dark-200 text-dark-700 font-medium rounded-xl hover:bg-dark-50 hover:border-dark-300 active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
           >
             {isGoogleLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -304,7 +320,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               </span>
             ) : (
               <>
-                <GoogleIcon className="w-4 h-4" />
+                <GoogleIcon className="w-[18px] h-[18px]" />
                 Continue with Google
               </>
             )}
@@ -312,8 +328,8 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
         </form>
 
         {/* Footer */}
-        <div className="px-5 pb-5 text-center">
-          <p className="text-sm text-dark-500">
+        <div className="px-3 pb-2.5 text-center border-t border-dark-100 pt-2 bg-dark-50/50">
+          <p className="text-xs text-dark-500">
             {mode === 'login' ? (
               <>
                 Don&apos;t have an account?{' '}
@@ -347,15 +363,6 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             )}
           </p>
         </div>
-
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <CloseIcon className="w-5 h-5" />
-        </button>
       </div>
     </div>
   );

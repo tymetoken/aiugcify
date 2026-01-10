@@ -5,7 +5,6 @@ import { useVideoStore } from '../store/videoStore';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/Button';
 import { UpgradeModal } from '../components/UpgradeModal';
-import { LoginModal } from '../components/LoginModal';
 
 export function DashboardPage() {
   const { isOnProductPage, scrapedProduct, scrapeCurrentPage, isLoading } = useProductStore();
@@ -14,7 +13,6 @@ export function DashboardPage() {
   const { user, isAuthenticated } = useAuthStore();
   const previousProductUrl = useRef<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const hasCredits = (user?.creditBalance ?? 0) > 0;
 
@@ -30,7 +28,7 @@ export function DashboardPage() {
   const handleStartGeneration = async () => {
     // Check if user is authenticated first
     if (!isAuthenticated) {
-      setShowLoginModal(true);
+      setPage('login');
       return;
     }
 
@@ -43,16 +41,6 @@ export function DashboardPage() {
     // Clear old video/script state when starting fresh generation
     resetVideoStore();
 
-    if (!scrapedProduct) {
-      await scrapeCurrentPage();
-    }
-    setPage('product');
-  };
-
-  const handleLoginSuccess = async () => {
-    setShowLoginModal(false);
-    // After login, continue with generation flow
-    // The user state will be updated, so we check credits again
     if (!scrapedProduct) {
       await scrapeCurrentPage();
     }
@@ -223,7 +211,7 @@ export function DashboardPage() {
             : ''
         }`}
         size="lg"
-        disabled={!isOnProductPage}
+        disabled={!isOnProductPage && !scrapedProduct}
         isLoading={isLoading}
       >
         <span className="flex items-center gap-2">
@@ -270,13 +258,6 @@ export function DashboardPage() {
           <p className="text-[11px] text-dark-400">Plans & pricing</p>
         </button>
       </div>
-
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={handleLoginSuccess}
-      />
 
       {/* Upgrade Modal */}
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />

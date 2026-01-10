@@ -145,6 +145,8 @@ export default function App() {
             });
             // Refresh user credits
             refreshUser();
+            // Refresh videos list so the new script appears in history
+            useVideoStore.getState().loadVideos();
             // Navigate to script editor to show the completed script
             setPage('script-editor');
           }
@@ -173,7 +175,7 @@ export default function App() {
   // Wait for all stores to hydrate from Chrome storage
   const isHydrating = !uiHydrated || !videoHydrated || !productHydrated;
 
-  if (authLoading || isHydrating) {
+  if (isHydrating) {
     return (
       <div className="min-h-[480px] flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">

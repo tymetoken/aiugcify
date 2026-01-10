@@ -56,6 +56,14 @@ export const useAuthStore = create<AuthState>()(
               refreshToken: tokens.refreshToken,
             });
           });
+          apiClient.setOnAuthFailed(() => {
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              isAuthenticated: false,
+            });
+          });
 
           try {
             const { user } = await apiClient.getMe();
@@ -84,6 +92,14 @@ export const useAuthStore = create<AuthState>()(
             set({
               accessToken: newTokens.accessToken,
               refreshToken: newTokens.refreshToken,
+            });
+          });
+          apiClient.setOnAuthFailed(() => {
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              isAuthenticated: false,
             });
           });
 
@@ -115,6 +131,14 @@ export const useAuthStore = create<AuthState>()(
               refreshToken: newTokens.refreshToken,
             });
           });
+          apiClient.setOnAuthFailed(() => {
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              isAuthenticated: false,
+            });
+          });
 
           set({
             user,
@@ -143,6 +167,14 @@ export const useAuthStore = create<AuthState>()(
             set({
               accessToken: newTokens.accessToken,
               refreshToken: newTokens.refreshToken,
+            });
+          });
+          apiClient.setOnAuthFailed(() => {
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              isAuthenticated: false,
             });
           });
 

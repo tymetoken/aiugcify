@@ -133,6 +133,8 @@ export const useVideoStore = create<VideoState>()(
                 });
                 // Refresh user to update credit balance
                 useAuthStore.getState().refreshUser();
+                // Refresh videos list so the new script appears in history
+                get().loadVideos();
               } else if (response?.error) {
                 set({
                   error: response.error,
@@ -190,6 +192,8 @@ export const useVideoStore = create<VideoState>()(
 
           // Refresh user to update credit balance after script generation
           useAuthStore.getState().refreshUser();
+          // Refresh videos list so the new script appears in history
+          get().loadVideos();
         } catch (error) {
           set({
             error: (error as Error).message,
@@ -358,13 +362,13 @@ export const useVideoStore = create<VideoState>()(
         set({ isLoading: true });
 
         try {
-          const { videos } = await apiClient.getVideos();
+          const response = await apiClient.getVideos();
+          const videos = response?.videos || [];
           set({ videos, isLoading: false });
         } catch (error) {
-          set({
-            error: (error as Error).message,
-            isLoading: false,
-          });
+          // Don't show error for video list failures - just log and continue
+          console.warn('[VideoStore] Failed to load videos:', (error as Error).message);
+          set({ isLoading: false });
         }
       },
 

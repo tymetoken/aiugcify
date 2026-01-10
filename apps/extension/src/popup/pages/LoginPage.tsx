@@ -115,15 +115,24 @@ export function LoginPage({ onRegister }: LoginPageProps) {
 
   return (
     <div className="min-h-[480px] flex flex-col relative overflow-hidden">
-      {/* Background gradient - softer, more refined */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary-500 via-primary-600 to-primary-700" />
+      {/* Background gradient - purple to coral matching app theme */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-500 to-accent-500" />
 
       {/* Radial overlay for luminous top highlight */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.15)_0%,_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.12)_0%,_transparent_50%)]" />
 
-      {/* Decorative circles - larger, softer ambient glow */}
-      <div className="absolute -top-20 -right-20 w-64 h-64 bg-accent-500/8 rounded-full blur-3xl" />
-      <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-primary-400/10 rounded-full blur-3xl" />
+      {/* Decorative circles - subtle ambient glow */}
+      <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
+      <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-accent-400/15 rounded-full blur-3xl" />
+
+      {/* Close button */}
+      <button
+        type="button"
+        onClick={() => setPage('dashboard')}
+        className="absolute top-3 right-3 z-20 p-1.5 text-white/70 hover:text-white hover:bg-white/15 rounded-full transition-all"
+      >
+        <CloseIcon className="w-5 h-5" />
+      </button>
 
       {/* Content */}
       <div className="relative flex-1 flex flex-col items-center justify-center p-6 z-10">
@@ -295,6 +304,14 @@ function GoogleIcon({ className }: { className?: string }) {
         fill="#EA4335"
         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
       />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18 6L6 18M6 6l12 12" />
     </svg>
   );
 }

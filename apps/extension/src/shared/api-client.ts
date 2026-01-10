@@ -24,6 +24,7 @@ class ApiClient {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private onTokenRefresh?: (tokens: AuthTokens) => void;
+  private onAuthFailed?: () => void;
 
   setTokens(accessToken: string | null, refreshToken: string | null) {
     this.accessToken = accessToken;
@@ -32,6 +33,10 @@ class ApiClient {
 
   setOnTokenRefresh(callback: (tokens: AuthTokens) => void) {
     this.onTokenRefresh = callback;
+  }
+
+  setOnAuthFailed(callback: () => void) {
+    this.onAuthFailed = callback;
   }
 
   private async request<T>(
@@ -59,28 +64,44 @@ class ApiClient {
       return {} as T;
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Server error (${response.status}): Unable to parse response`);
+    }
 
     if (!response.ok) {
       const error = data as ApiErrorResponse;
 
-      // Handle token expiry
-      if (response.status === 401 && error.error.code === 'TOKEN_EXPIRED' && this.refreshToken) {
+      // Handle token expiry or invalid token
+      if (response.status === 401 && ['TOKEN_EXPIRED', 'TOKEN_INVALID'].includes(error?.error?.code) && this.refreshToken) {
         const newTokens = await this.refreshTokens();
         if (newTokens) {
           // Retry with new token
           (headers as Record<string, string>)['Authorization'] = `Bearer ${newTokens.accessToken}`;
           const retryResponse = await fetch(url, { ...options, headers });
-          const retryData = await retryResponse.json();
+          let retryData: unknown;
+          try {
+            retryData = await retryResponse.json();
+          } catch {
+            throw new Error(`Server error (${retryResponse.status}): Unable to parse response`);
+          }
 
           if (!retryResponse.ok) {
-            throw new Error((retryData as ApiErrorResponse).error.message);
+            const retryError = retryData as ApiErrorResponse;
+            const errorMessage = retryError?.error?.message || (retryData as { message?: string })?.message || 'Request failed';
+            throw new Error(errorMessage);
           }
           return (retryData as ApiResponse<T>).data;
         }
+        // Token refresh failed - user needs to sign in again
+        throw new Error('Session expired. Please sign in again.');
       }
 
-      throw new Error(error.error.message);
+      // Defensive error message extraction
+      const errorMessage = error?.error?.message || (data as { message?: string })?.message || `Request failed (${response.status})`;
+      throw new Error(errorMessage);
     }
 
     return (data as ApiResponse<T>).data;
@@ -99,6 +120,10 @@ class ApiClient {
       if (!response.ok) {
         this.accessToken = null;
         this.refreshToken = null;
+        // Notify auth store that authentication failed
+        if (this.onAuthFailed) {
+          this.onAuthFailed();
+        }
         return null;
       }
 
@@ -284,11 +309,18 @@ class ApiClient {
         },
       }
     );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch videos: ${response.status}`);
+    }
+
     const data = await response.json();
-    return {
-      videos: data.data.videos,
-      meta: data.meta,
-    };
+
+    // Handle case where data structure might be different
+    const videos = data?.data?.videos || [];
+    const meta = data?.meta || { page: 1, limit: 20, total: 0, totalPages: 0 };
+
+    return { videos, meta };
   }
 
   async getDownloadUrl(videoId: string): Promise<{ downloadUrl: string }> {

@@ -89,9 +89,9 @@ export const videoWorker = new Worker<VideoJobData>(
 
       await job.updateProgress(20);
 
-      // Step 4: Poll for completion (40 minutes max - Sora 2 can take 15-30 min)
+      // Step 4: Poll for completion (10 minutes max - Sora 2 takes 3-5 min)
       const videoResult = await kieService.pollUntilComplete(kieJob.id, {
-        maxAttempts: 240,
+        maxAttempts: 60,
         intervalMs: 10000,
         onProgress: async (progress) => {
           // Map progress (0-100) to our progress (20-70)

@@ -69,47 +69,54 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
 
   return (
     <div className="min-h-[480px] flex flex-col relative overflow-hidden">
-      {/* Background gradient - subtle slate to teal */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-800 via-primary-700 to-accent-700" />
+      {/* Background gradient - purple to coral matching app theme */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-500 to-accent-500" />
 
-      {/* Decorative circles - subtle and refined */}
-      <div className="absolute -top-20 -left-20 w-64 h-64 bg-accent-400/10 rounded-full blur-3xl" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl" />
+      {/* Radial overlay for luminous top highlight */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.12)_0%,_transparent_50%)]" />
+
+      {/* Decorative circles - subtle ambient glow */}
+      <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
+      <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-accent-400/15 rounded-full blur-3xl" />
+
+      {/* Close button */}
+      <button
+        type="button"
+        onClick={() => setPage('dashboard')}
+        className="absolute top-3 right-3 z-20 p-1.5 text-white/70 hover:text-white hover:bg-white/15 rounded-full transition-all"
+      >
+        <CloseIcon className="w-5 h-5" />
+      </button>
 
       {/* Content */}
       <div className="relative flex-1 flex flex-col items-center justify-center p-6 z-10">
-        {/* Logo */}
-        <div className="animate-fade-in-up mb-6 text-center">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-glow-lg border border-white/20">
-            <div className="w-11 h-11 bg-gradient-to-br from-white to-white/80 rounded-xl flex items-center justify-center">
+        {/* Logo - Compact */}
+        <div className="animate-fade-in-up mb-4 text-center">
+          <div className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-glow-lg border border-white/20">
+            <div className="w-10 h-10 bg-gradient-to-br from-white to-white/80 rounded-xl flex items-center justify-center">
               <span className="gradient-text font-black text-lg">AI</span>
             </div>
           </div>
-          <h1 className="text-xl font-bold text-white">Create Account</h1>
-          <p className="text-white/70 mt-1 text-sm">Start generating UGC videos</p>
+          <h1 className="text-xl font-bold text-white">Create your account</h1>
+          <p className="text-white/70 text-xs">Start generating UGC videos today</p>
         </div>
 
         {/* Register Form */}
         <div className="w-full max-w-sm animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="glass rounded-2xl p-5 shadow-soft-lg">
+          <div className="glass rounded-2xl p-4 shadow-soft-lg">
             <form onSubmit={handleSubmit} className="space-y-3">
               {/* Name Input */}
               <div>
                 <label className="block text-xs font-medium text-dark-700 mb-1">
-                  Name <span className="text-dark-400">(optional)</span>
+                  Name <span className="text-dark-400 font-normal">(optional)</span>
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <UserIcon className="w-4 h-4 text-dark-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-                  />
-                </div>
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 bg-dark-50 border border-dark-200 rounded-lg text-sm text-dark-800 placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                />
               </div>
 
               {/* Email Input */}
@@ -117,19 +124,14 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
                 <label className="block text-xs font-medium text-dark-700 mb-1">
                   Email
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <EmailIcon className="w-4 h-4 text-dark-400" />
-                  </div>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full pl-9 pr-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-                  />
-                </div>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-dark-50 border border-dark-200 rounded-lg text-sm text-dark-800 placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                />
               </div>
 
               {/* Password Input */}
@@ -137,21 +139,16 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
                 <label className="block text-xs font-medium text-dark-700 mb-1">
                   Password
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <LockIcon className="w-4 h-4 text-dark-400" />
-                  </div>
-                  <input
-                    type="password"
-                    placeholder="Create a strong password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full pl-9 pr-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-                  />
-                </div>
-                <p className="mt-1 text-[10px] text-dark-400">
-                  8+ chars with uppercase, lowercase, number & special character
+                <input
+                  type="password"
+                  placeholder="Create password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-dark-50 border border-dark-200 rounded-lg text-sm text-dark-800 placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                />
+                <p className="text-[10px] text-dark-400 mt-0.5">
+                  Min 8 chars with uppercase, lowercase, number & symbol
                 </p>
               </div>
 
@@ -160,25 +157,20 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
                 <label className="block text-xs font-medium text-dark-700 mb-1">
                   Confirm Password
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <ShieldIcon className="w-4 h-4 text-dark-400" />
-                  </div>
-                  <input
-                    type="password"
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full pl-9 pr-3 py-2.5 bg-dark-50 border border-dark-200 rounded-xl text-dark-800 placeholder-dark-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
-                  />
-                </div>
+                <input
+                  type="password"
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-dark-50 border border-dark-200 rounded-lg text-sm text-dark-800 placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all"
+                />
               </div>
 
               {/* Error Message */}
               {displayError && (
-                <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl animate-scale-in">
-                  <p className="text-xs text-red-600 flex items-center gap-2">
+                <div className="p-2 bg-red-50 border border-red-200 rounded-lg animate-scale-in">
+                  <p className="text-xs text-red-600 flex items-center gap-1.5">
                     <AlertIcon className="w-3.5 h-3.5" />
                     {displayError}
                   </p>
@@ -189,7 +181,7 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-primary-600 to-accent-500 text-white font-semibold rounded-xl shadow-lg shadow-accent-500/20 hover:shadow-xl hover:shadow-accent-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-primary-600 to-accent-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-accent-500/20 hover:shadow-xl hover:shadow-accent-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -202,15 +194,8 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
               </button>
             </form>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-4">
-              <div className="flex-1 h-px bg-dark-200" />
-              <span className="text-xs text-dark-400">or</span>
-              <div className="flex-1 h-px bg-dark-200" />
-            </div>
-
             {/* Login Link */}
-            <p className="text-center text-sm text-dark-500">
+            <p className="text-center text-xs text-dark-500 mt-3">
               Already have an account?{' '}
               <button
                 onClick={onLogin}
@@ -223,42 +208,6 @@ export function RegisterPage({ onLogin }: RegisterPageProps) {
         </div>
       </div>
     </div>
-  );
-}
-
-function UserIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function EmailIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-      <polyline points="22,6 12,13 2,6" />
-    </svg>
-  );
-}
-
-function LockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  );
-}
-
-function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
   );
 }
 
@@ -277,6 +226,14 @@ function LoadingSpinner({ className }: { className?: string }) {
     <svg className={`animate-spin ${className}`} viewBox="0 0 24 24" fill="none">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18 6L6 18M6 6l12 12" />
     </svg>
   );
 }
