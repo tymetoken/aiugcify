@@ -7,8 +7,6 @@ import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { UserPublic, AuthTokens } from '@aiugcify/shared-types';
 
-const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
-
 const SALT_ROUNDS = 12;
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MINUTES = 15;
@@ -249,6 +247,9 @@ class AuthService {
       logger.error('GOOGLE_CLIENT_ID is not configured');
       throw new AppError(503, ErrorCodes.SERVICE_UNAVAILABLE, 'Google sign-in is not configured');
     }
+
+    // Create OAuth2Client with verified client ID
+    const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 
     // Verify the Google ID token
     let payload;
