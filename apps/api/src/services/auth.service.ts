@@ -242,6 +242,12 @@ class AuthService {
   }
 
   async googleAuth(idToken: string): Promise<AuthResult> {
+    logger.info({
+      hasClientId: !!config.GOOGLE_CLIENT_ID,
+      clientIdPrefix: config.GOOGLE_CLIENT_ID?.substring(0, 20) + '...',
+      idTokenLength: idToken?.length || 0,
+    }, 'Google auth request received');
+
     // Check if Google OAuth is configured
     if (!config.GOOGLE_CLIENT_ID) {
       logger.error('GOOGLE_CLIENT_ID is not configured');
@@ -254,14 +260,21 @@ class AuthService {
     // Verify the Google ID token
     let payload;
     try {
+      logger.info('Verifying Google ID token...');
       const ticket = await googleClient.verifyIdToken({
         idToken,
         audience: config.GOOGLE_CLIENT_ID,
       });
       payload = ticket.getPayload();
+      logger.info({ email: payload?.email }, 'Google token verified successfully');
     } catch (error) {
-      logger.error({ error }, 'Google token verification failed');
-      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token');
+      const err = error as Error;
+      logger.error({
+        errorMessage: err.message,
+        errorName: err.name,
+        stack: err.stack?.substring(0, 500),
+      }, 'Google token verification failed');
+      throw new AppError(401, ErrorCodes.INVALID_CREDENTIALS, 'Invalid Google token. Please try again.');
     }
 
     if (!payload || !payload.email) {
