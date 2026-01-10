@@ -4,12 +4,16 @@ import { config } from './config/index.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { disconnectRedis } from './config/redis.js';
 import { logger } from './utils/logger.js';
+import { videoWorker } from './workers/video.worker.js';
 
 async function main() {
   const app = createApp();
 
   // Connect to database
   await connectDatabase();
+
+  // Log video worker initialization (worker starts automatically on import)
+  logger.info({ workerId: videoWorker.id, queueName: 'video-generation' }, 'Video worker initialized');
 
   // Start server (Railway sets PORT automatically)
   const port = parseInt(config.PORT, 10);
@@ -27,6 +31,10 @@ async function main() {
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutting down...');
+
+    // Close video worker first
+    await videoWorker.close();
+    logger.info('Video worker closed');
 
     server.close(async () => {
       await disconnectDatabase();

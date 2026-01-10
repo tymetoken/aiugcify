@@ -6,7 +6,6 @@ import { videoQueue } from '../queues/video.queue.js';
 import { processVideoDirect } from './direct-video-processor.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import { isDevelopment } from '../config/index.js';
 import type { ProductData, VideoStyle, Video, VideoListItem } from '@aiugcify/shared-types';
 
 interface GenerateScriptInput {
@@ -143,19 +142,10 @@ class VideosService {
     } catch (queueError) {
       const errorMessage = (queueError as Error).message;
 
-      // Handle Redis unavailability - use direct processing in development
+      // Handle Redis unavailability - use direct processing as fallback
       if (errorMessage.includes('max requests limit exceeded') || errorMessage.includes('ECONNREFUSED')) {
-        if (isDevelopment) {
-          logger.warn({ videoId, error: errorMessage }, 'Redis unavailable, using direct processing');
-          useDirectProcessing = true;
-        } else {
-          logger.error({ videoId, error: errorMessage }, 'Redis queue unavailable');
-          throw new AppError(
-            503,
-            ErrorCodes.SERVICE_UNAVAILABLE,
-            'Video generation service is temporarily unavailable. Please try again in a few minutes.'
-          );
-        }
+        logger.warn({ videoId, error: errorMessage }, 'Redis unavailable, using direct processing');
+        useDirectProcessing = true;
       } else {
         throw queueError;
       }
@@ -322,22 +312,8 @@ class VideosService {
       const errorMessage = (queueError as Error).message;
 
       if (errorMessage.includes('max requests limit exceeded') || errorMessage.includes('ECONNREFUSED')) {
-        if (isDevelopment) {
-          logger.warn({ videoId, error: errorMessage }, 'Redis unavailable for retry, using direct processing');
-          useDirectProcessing = true;
-        } else {
-          // Revert retry count increment
-          await prisma.video.update({
-            where: { id: videoId },
-            data: { retryCount: { decrement: 1 } },
-          });
-          logger.error({ videoId, error: errorMessage }, 'Redis queue unavailable for retry');
-          throw new AppError(
-            503,
-            ErrorCodes.SERVICE_UNAVAILABLE,
-            'Video generation service is temporarily unavailable. Please try again in a few minutes.'
-          );
-        }
+        logger.warn({ videoId, error: errorMessage }, 'Redis unavailable for retry, using direct processing');
+        useDirectProcessing = true;
       } else {
         // Revert retry count increment for other errors
         await prisma.video.update({
