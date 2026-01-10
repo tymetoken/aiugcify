@@ -244,6 +244,12 @@ class AuthService {
   }
 
   async googleAuth(idToken: string): Promise<AuthResult> {
+    // Check if Google OAuth is configured
+    if (!config.GOOGLE_CLIENT_ID) {
+      logger.error('GOOGLE_CLIENT_ID is not configured');
+      throw new AppError(503, ErrorCodes.SERVICE_UNAVAILABLE, 'Google sign-in is not configured');
+    }
+
     // Verify the Google ID token
     let payload;
     try {

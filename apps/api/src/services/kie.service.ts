@@ -74,6 +74,19 @@ class KieService {
     // Base URL should be https://api.kie.ai
     this.baseUrl = config.KIE_API_BASE_URL.replace(/\/$/, '');
     this.apiKey = config.KIE_API_KEY;
+
+    // Validate API key on startup
+    if (!this.apiKey || this.apiKey === 'undefined' || this.apiKey.trim() === '') {
+      logger.error(
+        { hasKey: !!this.apiKey, keyLength: this.apiKey?.length || 0 },
+        'KIE_API_KEY is missing or empty! Video generation will fail.'
+      );
+    } else {
+      logger.info(
+        { baseUrl: this.baseUrl, keyPrefix: this.apiKey.substring(0, 4) + '***' },
+        'Kie.ai service initialized'
+      );
+    }
   }
 
   private async request<T>(
@@ -82,7 +95,19 @@ class KieService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
-    logger.debug({ url, method: options.method || 'GET' }, 'Kie.ai API request');
+    // Check API key before making request
+    if (!this.apiKey || this.apiKey === 'undefined' || this.apiKey.trim() === '') {
+      logger.error(
+        { endpoint, hasKey: !!this.apiKey },
+        'Kie.ai request failed: KIE_API_KEY is not configured'
+      );
+      throw new AppError(500, ErrorCodes.VIDEO_GENERATION_FAILED, 'Video service not configured. Please contact support.');
+    }
+
+    logger.debug(
+      { url, method: options.method || 'GET', hasAuthHeader: true, keyPrefix: this.apiKey.substring(0, 4) + '***' },
+      'Kie.ai API request'
+    );
 
     const response = await fetch(url, {
       ...options,
@@ -93,11 +118,26 @@ class KieService {
       },
     });
 
-    const data = await response.json() as T & { message?: string; error?: string };
+    const data = await response.json() as T & { message?: string; error?: string; msg?: string };
 
     if (!response.ok) {
-      logger.error({ endpoint, status: response.status, error: data }, 'Kie.ai API error');
-      const errorMessage = data?.message || data?.error || 'Unknown error from Kie.ai API';
+      // Enhanced error logging for auth issues
+      const isAuthError = response.status === 401 || response.status === 403 ||
+        (data?.message || data?.error || data?.msg || '').toLowerCase().includes('auth');
+
+      logger.error(
+        {
+          endpoint,
+          status: response.status,
+          error: data,
+          isAuthError,
+          keyConfigured: !!this.apiKey && this.apiKey !== 'undefined',
+          keyLength: this.apiKey?.length || 0,
+        },
+        isAuthError ? 'Kie.ai API authentication failed - check KIE_API_KEY' : 'Kie.ai API error'
+      );
+
+      const errorMessage = data?.message || data?.error || data?.msg || 'Unknown error from Kie.ai API';
       throw new AppError(500, ErrorCodes.VIDEO_GENERATION_FAILED, errorMessage);
     }
 

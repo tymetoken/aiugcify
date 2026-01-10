@@ -22,12 +22,20 @@ async function connectWithRetry(maxRetries = 10, delayMs = 3000): Promise<void> 
 }
 
 async function main() {
-  logger.info('=== VIDEO WORKER PROCESS STARTED ===');
+  logger.info({
+    nodeEnv: process.env.NODE_ENV,
+    hasRedisUrl: !!process.env.REDIS_URL,
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    hasKieApiKey: !!process.env.KIE_API_KEY,
+  }, '=== VIDEO WORKER PROCESS STARTED ===');
 
   // Connect to database with retry logic
   await connectWithRetry();
 
-  logger.info('=== VIDEO WORKER READY - Waiting for jobs ===');
+  logger.info({
+    workerId: videoWorker.id,
+    queueName: 'video-generation',
+  }, '=== VIDEO WORKER READY - Waiting for jobs ===');
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

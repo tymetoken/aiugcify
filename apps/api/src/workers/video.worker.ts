@@ -30,7 +30,13 @@ export const videoWorker = new Worker<VideoJobData>(
   async (job: Job<VideoJobData>) => {
     const { videoId, script, style, productImageUrl } = job.data;
 
-    logger.info({ jobId: job.id, videoId, hasProductImage: !!productImageUrl }, 'Starting video generation');
+    logger.info({
+      jobId: job.id,
+      videoId,
+      hasProductImage: !!productImageUrl,
+      scriptLength: script?.length,
+      style
+    }, '=== STARTING VIDEO GENERATION JOB ===');
 
     try {
       // Fetch the video record to get the master product summary and product images
@@ -69,10 +75,12 @@ export const videoWorker = new Worker<VideoJobData>(
       );
 
       // Step 3: Submit to Kie.ai Sora 2 API (image-to-video if image available, otherwise text-to-video)
+      logger.info({ videoId, promptPreview: videoPrompt.substring(0, 200), hasImage: !!imageUrl }, 'Submitting to Kie.ai API');
       const kieJob = await kieService.createVideo({
         prompt: videoPrompt,
         imageUrl: imageUrl, // Pass product image for image-to-video generation
       });
+      logger.info({ videoId, kieJobId: kieJob.id }, 'Kie.ai job created successfully');
 
       await prisma.video.update({
         where: { id: videoId },
