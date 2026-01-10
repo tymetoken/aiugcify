@@ -73,18 +73,27 @@ class KieService {
   constructor() {
     // Base URL should be https://api.kie.ai
     this.baseUrl = config.KIE_API_BASE_URL.replace(/\/$/, '');
-    this.apiKey = config.KIE_API_KEY;
 
-    // Validate API key on startup
+    // Get and trim API key to remove any whitespace/newlines
+    const rawKey = config.KIE_API_KEY;
+    this.apiKey = rawKey ? rawKey.trim() : '';
+
+    // Validate API key on startup with detailed logging
     if (!this.apiKey || this.apiKey === 'undefined' || this.apiKey.trim() === '') {
       logger.error(
-        { hasKey: !!this.apiKey, keyLength: this.apiKey?.length || 0 },
+        { hasKey: !!rawKey, rawKeyLength: rawKey?.length || 0, trimmedLength: this.apiKey?.length || 0 },
         'KIE_API_KEY is missing or empty! Video generation will fail.'
       );
     } else {
       logger.info(
-        { baseUrl: this.baseUrl, keyPrefix: this.apiKey.substring(0, 4) + '***' },
-        'Kie.ai service initialized'
+        {
+          baseUrl: this.baseUrl,
+          keyLength: this.apiKey.length,
+          keyPrefix: this.apiKey.substring(0, 8) + '...',
+          keySuffix: '...' + this.apiKey.substring(this.apiKey.length - 4),
+          rawVsTrimmed: rawKey.length !== this.apiKey.length ? 'TRIMMED whitespace' : 'no whitespace',
+        },
+        'Kie.ai service initialized with API key'
       );
     }
   }
@@ -104,41 +113,60 @@ class KieService {
       throw new AppError(500, ErrorCodes.VIDEO_GENERATION_FAILED, 'Video service not configured. Please contact support.');
     }
 
-    logger.debug(
-      { url, method: options.method || 'GET', hasAuthHeader: true, keyPrefix: this.apiKey.substring(0, 4) + '***' },
-      'Kie.ai API request'
+    // Log detailed request info for debugging
+    logger.info(
+      {
+        url,
+        method: options.method || 'GET',
+        keyLength: this.apiKey.length,
+        keyPrefix: this.apiKey.substring(0, 8) + '...',
+        keySuffix: '...' + this.apiKey.substring(this.apiKey.length - 4),
+      },
+      'Kie.ai API request - sending with Authorization header'
     );
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.apiKey}`,
+      ...options.headers,
+    };
 
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-        ...options.headers,
-      },
+      headers,
     });
 
-    const data = await response.json() as T & { message?: string; error?: string; msg?: string };
+    // Log response status immediately
+    logger.info(
+      { url, status: response.status, statusText: response.statusText },
+      'Kie.ai API response received'
+    );
+
+    const data = await response.json() as T & { message?: string; error?: string; msg?: string; code?: number };
 
     if (!response.ok) {
       // Enhanced error logging for auth issues
+      const errorText = data?.message || data?.error || data?.msg || '';
       const isAuthError = response.status === 401 || response.status === 403 ||
-        (data?.message || data?.error || data?.msg || '').toLowerCase().includes('auth');
+        errorText.toLowerCase().includes('auth') || errorText.toLowerCase().includes('authorization');
 
       logger.error(
         {
           endpoint,
           status: response.status,
-          error: data,
+          responseData: JSON.stringify(data),
           isAuthError,
-          keyConfigured: !!this.apiKey && this.apiKey !== 'undefined',
           keyLength: this.apiKey?.length || 0,
+          keyPrefix: this.apiKey.substring(0, 8) + '...',
         },
-        isAuthError ? 'Kie.ai API authentication failed - check KIE_API_KEY' : 'Kie.ai API error'
+        isAuthError ? 'Kie.ai API authentication failed - check KIE_API_KEY in Railway' : 'Kie.ai API error'
       );
 
-      const errorMessage = data?.message || data?.error || data?.msg || 'Unknown error from Kie.ai API';
-      throw new AppError(500, ErrorCodes.VIDEO_GENERATION_FAILED, errorMessage);
+      // Provide user-friendly error message
+      const userMessage = isAuthError
+        ? 'Video service authentication failed. Please contact support.'
+        : (errorText || 'Video generation service error');
+      throw new AppError(500, ErrorCodes.VIDEO_GENERATION_FAILED, userMessage);
     }
 
     return data as T;
