@@ -9,22 +9,11 @@ const GENERATION_STAGES = [
   { id: 'processing', label: 'Render', tips: ['Polishing to perfection...', 'Adding final touches...', 'Almost there...'] },
 ];
 
-const TOTAL_DURATION_SECONDS = 300; // 5 minutes
-
 export function GeneratingPage() {
   const { currentVideo, error, pollVideoStatus, isGenerating, reset, clearError } = useVideoStore();
   const { scrapedProduct } = useProductStore();
   const { setPage } = useUIStore();
   const [tipIndex, setTipIndex] = useState(0);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  // Timer for smooth progress
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedSeconds((prev) => Math.min(prev + 1, TOTAL_DURATION_SECONDS));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleBackToDashboard = () => {
     clearError();
@@ -57,11 +46,6 @@ export function GeneratingPage() {
 
   const currentStageIndex = getCurrentStageIndex();
   const currentStage = GENERATION_STAGES[currentStageIndex] || GENERATION_STAGES[0];
-
-  // Calculate progress: use the higher of time-based or status-based
-  const timeBasedProgress = (elapsedSeconds / TOTAL_DURATION_SECONDS) * 95; // Cap at 95%
-  const statusBasedProgress = currentStageIndex === 0 ? 15 : currentStageIndex === 1 ? 50 : currentStageIndex === 2 ? 85 : 100;
-  const progressPercent = Math.min(Math.max(timeBasedProgress, statusBasedProgress), 95); // Cap at 95% until complete
 
   // Rotate tips
   useEffect(() => {
