@@ -94,7 +94,7 @@ export const videoGenerationRateLimit = rateLimit({
 // SECURITY: Always enforced to prevent OpenAI API abuse and cost overruns
 export const scriptGenerationRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: isDevelopment ? 30 : 10, // Higher limit in dev, but still enforced
+  max: isDevelopment ? 100 : 50, // 50 per minute in production
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
