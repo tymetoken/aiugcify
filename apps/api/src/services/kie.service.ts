@@ -191,7 +191,6 @@ class KieService {
         aspect_ratio: 'portrait',
         n_frames: '10',
         size: 'high',
-        remove_watermark: true,
       };
 
       // Add image_urls for image-to-video model
