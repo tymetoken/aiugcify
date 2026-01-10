@@ -253,6 +253,12 @@ class KieService {
 
       const { data } = response;
 
+      // Log the raw state for debugging
+      logger.info(
+        { jobId, rawState: data.state, hasResultJson: !!data.resultJson },
+        'Kie.ai status check - raw response'
+      );
+
       // Map Kie.ai state to our format
       let mappedStatus: KieVideoJob['status'] = 'pending';
       if (data.state === 'completed' || data.state === 'success') {
