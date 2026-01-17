@@ -37,9 +37,17 @@ export const useUIStore = create<UIState>()(
       name: 'ui-storage',
       storage: createJSONStorage(() => chromeStorageAdapter),
       partialize: (state) => ({
-        currentPage: state.currentPage,
+        // Don't persist login/register pages - they should be transient
+        // If user was on login/register, default to dashboard on next load
+        currentPage: state.currentPage === 'login' || state.currentPage === 'register'
+          ? 'dashboard'
+          : state.currentPage,
       }),
       onRehydrateStorage: () => (state) => {
+        // If somehow login/register was persisted, reset to dashboard
+        if (state && (state.currentPage === 'login' || state.currentPage === 'register')) {
+          state.setPage('dashboard');
+        }
         state?.setHasHydrated(true);
       },
     }

@@ -99,6 +99,13 @@ export default function App() {
     wasAuthenticated.current = isAuthenticated;
   }, [isAuthenticated, authLoading, setPage]);
 
+  // Redirect authenticated users away from login/register pages
+  useEffect(() => {
+    if (isAuthenticated && (currentPage === 'login' || currentPage === 'register')) {
+      setPage('dashboard');
+    }
+  }, [isAuthenticated, currentPage, setPage]);
+
   // Navigate based on script generation state (for popup reopen scenarios)
   useEffect(() => {
     if (!videoHydrated) return;
@@ -186,21 +193,7 @@ export default function App() {
     );
   }
 
-  // Redirect authenticated users away from login/register pages
-  if (isAuthenticated && (currentPage === 'login' || currentPage === 'register')) {
-    // Use effect-like pattern to avoid render-time state update
-    Promise.resolve().then(() => setPage('dashboard'));
-    return (
-      <div className="min-h-[480px] flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show full-page login/register only when explicitly navigating to those pages
+  // Show full-page login/register only when NOT authenticated
   if (currentPage === 'login') {
     return <LoginPage onRegister={() => setPage('register')} />;
   }
