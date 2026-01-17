@@ -13,6 +13,7 @@ interface AuthState {
   error: string | null;
   isFirstLogin: boolean;
   isRefreshingCredits: boolean;
+  _hasHydrated: boolean;
 
   // Actions
   initialize: () => Promise<void>;
@@ -27,6 +28,7 @@ interface AuthState {
   setTokens: (tokens: AuthTokens) => void;
   clearError: () => void;
   setFirstLogin: (value: boolean) => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 // Store interval ID outside of state (not persisted)
@@ -44,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
       error: null,
       isFirstLogin: false,
       isRefreshingCredits: false,
+      _hasHydrated: false,
 
       initialize: async () => {
         const { accessToken, refreshToken } = get();
@@ -232,6 +235,8 @@ export const useAuthStore = create<AuthState>()(
 
       setFirstLogin: (value: boolean) => set({ isFirstLogin: value }),
 
+      setHasHydrated: (value: boolean) => set({ _hasHydrated: value }),
+
       refreshCredits: async () => {
         set({ isRefreshingCredits: true });
         try {
@@ -269,6 +274,9 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
