@@ -84,6 +84,8 @@ export function LoginPage({ onRegister }: LoginPageProps) {
       }
 
       await googleLogin(idToken);
+      // Immediately redirect after successful login - don't rely on useEffect timing
+      setPage('dashboard');
     } catch (err) {
       const message = (err as Error).message;
       if (!message.includes('user cancelled') && !message.includes('canceled')) {
@@ -108,6 +110,8 @@ export function LoginPage({ onRegister }: LoginPageProps) {
 
     try {
       await login(email, password);
+      // Immediately redirect after successful login - don't rely on useEffect timing
+      setPage('dashboard');
     } catch {
       // Error is already handled in the store
     }
