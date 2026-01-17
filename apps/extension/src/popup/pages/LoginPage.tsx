@@ -49,6 +49,11 @@ export function LoginPage({ onRegister }: LoginPageProps) {
     try {
       const redirectUrl = chrome.identity.getRedirectURL();
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+      if (!clientId) {
+        throw new Error('Google Client ID not configured');
+      }
+
       // Use cryptographically secure random nonce
       const nonceArray = new Uint8Array(32);
       crypto.getRandomValues(nonceArray);
@@ -84,13 +89,12 @@ export function LoginPage({ onRegister }: LoginPageProps) {
       }
 
       await googleLogin(idToken);
-      // Immediately redirect after successful login - don't rely on useEffect timing
+      // Immediately redirect after successful login
       setPage('dashboard');
     } catch (err) {
       const message = (err as Error).message;
-      if (!message.includes('user cancelled') && !message.includes('canceled')) {
-        setGoogleError(message || 'Google sign-in failed');
-      }
+      // Show ALL errors - don't hide any
+      setGoogleError(message || 'Google sign-in failed');
     } finally {
       setIsGoogleLoading(false);
     }
