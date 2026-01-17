@@ -1,14 +1,12 @@
 {
   "manifest_version": 3,
   "name": "AI UGCify - TikTok Shop Video Generator",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Generate AI-powered UGC marketing videos from TikTok Shop products instantly",
   "permissions": [
     "storage",
     "activeTab",
-    "scripting",
     "downloads",
-    "notifications",
     "identity"
   ],
   "oauth2": {
