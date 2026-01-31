@@ -1,23 +1,29 @@
-import { scrapeProductData, waitForProductData } from './tiktok-scraper';
-import type { ProductData } from '@aiugcify/shared-types';
+import { getScraperForUrl, detectPlatform, isSupported } from './scrapers';
+import type { ProductData, Platform } from '@aiugcify/shared-types';
 
 let cachedProductData: ProductData | null = null;
+let currentPlatform: Platform | null = null;
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.type === 'GET_PRODUCT_DATA') {
     if (cachedProductData) {
-      sendResponse({ success: true, data: cachedProductData });
+      sendResponse({ success: true, data: cachedProductData, platform: currentPlatform });
     } else {
       sendResponse({ success: false, error: 'No product data cached' });
     }
     return true;
   }
 
+  if (request.type === 'GET_PLATFORM') {
+    sendResponse({ platform: currentPlatform });
+    return true;
+  }
+
   if (request.type === 'SCRAPE_PRODUCT') {
     scrapeProduct()
       .then((data) => {
-        sendResponse({ success: true, data });
+        sendResponse({ success: true, data, platform: currentPlatform });
       })
       .catch((error) => {
         sendResponse({ success: false, error: error.message });
@@ -29,13 +35,22 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 });
 
 async function scrapeProduct(): Promise<ProductData> {
+  const url = window.location.href;
+  const scraper = getScraperForUrl(url);
+
+  if (!scraper) {
+    throw new Error('No scraper available for this page');
+  }
+
+  currentPlatform = scraper.getPlatform();
+
   try {
     // Try immediate scrape
-    let data = scrapeProductData();
+    let data = await scraper.scrape();
 
     if (!data) {
       // Wait for dynamic content
-      data = await waitForProductData(10000);
+      data = await scraper.waitForProductData(10000);
     }
 
     if (!data) {
@@ -45,17 +60,22 @@ async function scrapeProduct(): Promise<ProductData> {
     cachedProductData = data;
     return data;
   } catch (error) {
-    console.error('Failed to scrape product:', error);
+    console.error(`[AI UGCify] Failed to scrape ${currentPlatform} product:`, error);
     throw error;
   }
 }
 
 // Auto-scrape on page load
 async function init() {
-  // Check if we're on a product page
-  if (!isProductPage()) {
+  const url = window.location.href;
+
+  // Check if we're on a supported page
+  if (!isSupported(url)) {
     return;
   }
+
+  // Detect platform
+  currentPlatform = detectPlatform(url);
 
   // Wait for page to fully load
   if (document.readyState !== 'complete') {
@@ -69,24 +89,17 @@ async function init() {
 
   try {
     await scrapeProduct();
-    console.log('[AI UGCify] Product data scraped successfully');
+    console.log(`[AI UGCify] ${currentPlatform} product data scraped successfully`);
 
     // Notify background script
     chrome.runtime.sendMessage({
       type: 'PRODUCT_SCRAPED',
       data: cachedProductData,
+      platform: currentPlatform,
     });
   } catch (error) {
-    console.log('[AI UGCify] Failed to auto-scrape product:', error);
+    console.log(`[AI UGCify] Failed to auto-scrape ${currentPlatform} product:`, error);
   }
-}
-
-function isProductPage(): boolean {
-  const url = window.location.href;
-  return (
-    url.includes('tiktok.com') &&
-    (url.includes('/product/') || url.includes('/shop/pdp/') || url.includes('shop.tiktok.com'))
-  );
 }
 
 // Watch for SPA navigation
@@ -97,12 +110,18 @@ const observer = new MutationObserver(() => {
     lastUrl = window.location.href;
     cachedProductData = null;
 
-    if (isProductPage()) {
+    // Detect new platform
+    const newPlatform = detectPlatform(lastUrl);
+
+    if (newPlatform) {
+      currentPlatform = newPlatform;
+
       // Notify popup that we've navigated to a new product page
       chrome.runtime.sendMessage({
         type: 'PRODUCT_PAGE_CHANGED',
         previousUrl,
         newUrl: lastUrl,
+        platform: currentPlatform,
       });
       setTimeout(init, 1000);
     }

@@ -6,11 +6,12 @@ import { videoQueue } from '../queues/video.queue.js';
 import { processVideoDirect } from './direct-video-processor.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import type { ProductData, VideoStyle, Video, VideoListItem } from '@aiugcify/shared-types';
+import type { ProductData, VideoStyle, Video, VideoListItem, Platform } from '@aiugcify/shared-types';
 
 interface GenerateScriptInput {
   productData: ProductData;
   videoStyle: VideoStyle;
+  platform?: Platform;
   options?: {
     tone?: 'casual' | 'professional' | 'enthusiastic' | 'humorous';
     targetDuration?: number;
@@ -38,19 +39,23 @@ class VideosService {
   ): Promise<GenerateScriptResult> {
     const { productData, videoStyle, options } = input;
 
-    // Step 1: Analyze product with Product Breakdown GPT
-    logger.info({ productTitle: productData.title, userId }, 'Starting product analysis');
-    const analyzedProduct = await openaiService.analyzeProduct(productData);
+    // Determine platform from input or infer from URL
+    const platform = input.platform || productData.platform || this.inferPlatform(productData.url);
 
-    // Step 2: Generate script using the analyzed product data
-    logger.info({ productName: analyzedProduct.productName, userId }, 'Generating script from analyzed product');
-    const scriptResult = await openaiService.generateScript(productData, videoStyle, options, analyzedProduct);
+    // Step 1: Analyze product with Product Breakdown GPT (platform-aware)
+    logger.info({ productTitle: productData.title, userId, platform }, 'Starting product analysis');
+    const analyzedProduct = await openaiService.analyzeProduct(productData, platform);
 
-    // Create video record with analyzed product data
+    // Step 2: Generate script using the analyzed product data (platform-aware)
+    logger.info({ productName: analyzedProduct.productName, userId, platform }, 'Generating script from analyzed product');
+    const scriptResult = await openaiService.generateScript(productData, videoStyle, options, analyzedProduct, platform);
+
+    // Create video record with analyzed product data and platform
     const video = await prisma.video.create({
       data: {
         userId,
         status: 'SCRIPT_READY',
+        platform, // Store platform
         productData: productData as unknown as Prisma.InputJsonValue,
         productTitle: analyzedProduct.productName, // Use cleaned product name
         productUrl: productData.url,
@@ -200,6 +205,7 @@ class VideosService {
         select: {
           id: true,
           status: true,
+          platform: true,
           productTitle: true,
           videoStyle: true,
           thumbnailUrl: true,
@@ -210,7 +216,13 @@ class VideosService {
       prisma.video.count({ where: { userId } }),
     ]);
 
-    return { videos, total };
+    return {
+      videos: videos.map((v) => ({
+        ...v,
+        platform: v.platform as Platform,
+      })),
+      total,
+    };
   }
 
   async getDownloadUrl(userId: string, videoId: string): Promise<string> {
@@ -372,10 +384,21 @@ class VideosService {
     return video;
   }
 
+  private inferPlatform(url: string): Platform {
+    if (url.includes('tiktok.com')) return 'TIKTOK_SHOP';
+    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YOUTUBE_SHORTS';
+    if (url.includes('facebook.com') || url.includes('fb.watch')) return 'FACEBOOK_REELS';
+    if (url.includes('instagram.com')) return 'INSTAGRAM_REELS';
+    if (url.match(/amazon\.[a-z.]+/)) return 'AMAZON';
+    // Default to SHOPIFY for unknown product pages
+    return 'SHOPIFY';
+  }
+
   private mapToVideo(video: {
     id: string;
     userId: string;
     status: string;
+    platform: string;
     productData: unknown;
     productTitle: string;
     productUrl: string;
@@ -400,6 +423,7 @@ class VideosService {
       id: video.id,
       userId: video.userId,
       status: video.status as Video['status'],
+      platform: video.platform as Platform,
       productData: video.productData as ProductData,
       productTitle: video.productTitle,
       productUrl: video.productUrl,

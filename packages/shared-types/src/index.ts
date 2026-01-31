@@ -39,7 +39,16 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
-// Product Types (scraped from TikTok Shop)
+// Platform Types
+export type Platform =
+  | 'TIKTOK_SHOP'
+  | 'YOUTUBE_SHORTS'
+  | 'FACEBOOK_REELS'
+  | 'INSTAGRAM_REELS'
+  | 'AMAZON'
+  | 'SHOPIFY';
+
+// Product Types (scraped from multiple platforms)
 export interface ProductReview {
   rating: number;
   text: string;
@@ -47,7 +56,33 @@ export interface ProductReview {
   date?: string;
 }
 
+export interface VideoMetadata {
+  videoId?: string;
+  duration?: number;
+  viewCount?: string;
+  likeCount?: string;
+  creator?: string;
+  creatorHandle?: string;
+  hashtags?: string[];
+  productMentions?: string[];
+}
+
+export interface AffiliateLink {
+  type: 'product' | 'creator' | 'shop';
+  url: string;
+  label?: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  title: string;
+  price: string;
+  available: boolean;
+  options?: Record<string, string>;
+}
+
 export interface ProductData {
+  platform?: Platform;
   url: string;
   title: string;
   description: string;
@@ -60,6 +95,11 @@ export interface ProductData {
   soldCount?: string;
   specifications?: Record<string, string>;
   shopName?: string;
+  // Platform-specific fields
+  videoMetadata?: VideoMetadata;
+  affiliateLinks?: AffiliateLink[];
+  variants?: ProductVariant[];
+  bulletPoints?: string[];
 }
 
 // AI Analysis Types (from GPT-4 product analysis)
@@ -108,6 +148,7 @@ export interface Video {
   id: string;
   userId: string;
   status: VideoStatus;
+  platform: Platform;
   productData: ProductData;
   productTitle: string;
   productUrl: string;
@@ -132,6 +173,7 @@ export interface Video {
 export interface VideoListItem {
   id: string;
   status: VideoStatus;
+  platform: Platform;
   productTitle: string;
   videoStyle: VideoStyle;
   thumbnailUrl: string | null;
@@ -143,11 +185,13 @@ export interface VideoListItem {
 export interface GenerateScriptRequest {
   productData: ProductData;
   videoStyle: VideoStyle;
+  platform?: Platform;
   options?: {
     tone?: 'casual' | 'professional' | 'enthusiastic' | 'humorous';
     targetDuration?: 15 | 20 | 25 | 30;
     includeCallToAction?: boolean;
     highlightFeatures?: string[];
+    additionalNotes?: string;
   };
 }
 

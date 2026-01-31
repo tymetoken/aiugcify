@@ -3,7 +3,7 @@ import { config } from '../config/index.js';
 import { AppError, ErrorCodes } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { validateImageUrl } from '../utils/security.js';
-import type { ProductData, VideoStyle, SceneSuggestion, ProductReview } from '@aiugcify/shared-types';
+import type { ProductData, VideoStyle, SceneSuggestion, ProductReview, Platform } from '@aiugcify/shared-types';
 
 const openai = new OpenAI({
   apiKey: config.OPENAI_API_KEY,
@@ -379,6 +379,98 @@ B-ROLL ELEMENTS:
 - Transition inserts: pouring coffee, opening doors, nature elements`,
 };
 
+// Platform-specific context for adapting prompts based on source platform
+const PLATFORM_CONTEXT: Record<Platform, { analysis: string; script: string; cta: string }> = {
+  TIKTOK_SHOP: {
+    analysis: `This product is from TikTok Shop - an in-app e-commerce platform.
+Focus on: Viral-worthy hooks, trend alignment, fast-paced engagement.
+The output video will be used for TikTok promotion with in-app purchasing.`,
+    script: `OUTPUT PLATFORM: TikTok Shop
+- Video will be posted directly to TikTok with product tagged
+- Viewers can purchase in-app without leaving TikTok
+- Optimize for the TikTok algorithm: hook within 1 second, maintain attention throughout
+- Use trending TikTok language and energy`,
+    cta: `CTA STYLE: "Tap the orange cart" / "Click the shopping cart below"
+- Point to bottom-left corner where TikTok Shop cart icon appears
+- Emphasize in-app purchase convenience ("Get it without leaving TikTok")`,
+  },
+
+  YOUTUBE_SHORTS: {
+    analysis: `This product is being promoted via YouTube Shorts affiliate content.
+Focus on: Educational value, clear demonstrations, trustworthy recommendations.
+The content creator will earn affiliate commission from link clicks.`,
+    script: `OUTPUT PLATFORM: YouTube Shorts (for affiliate promotion)
+- Video will be posted as a YouTube Short with affiliate link in description
+- Viewers must click link in description or comments to purchase
+- YouTube audience expects more informative, less "salesy" content
+- Build trust through genuine demonstration and honest assessment`,
+    cta: `CTA STYLE: "Link in description" / "Check the link below"
+- Direct viewers to description/pinned comment for purchase link
+- Avoid aggressive sales tactics - YouTube audience responds to authenticity
+- Mention "I'll leave the link below" or "Link in bio" style phrases`,
+  },
+
+  FACEBOOK_REELS: {
+    analysis: `This product is from Facebook Reels content - targeting a broader age demographic.
+Focus on: Relatable scenarios, family-friendly appeal, clear value proposition.
+Facebook's audience skews older than TikTok - adjust tone accordingly.`,
+    script: `OUTPUT PLATFORM: Facebook Reels (cross-platform promotion)
+- Video will be posted to Facebook Reels reaching diverse age groups
+- Facebook audience includes more 30-55+ viewers than TikTok
+- Content should be relatable to parents, professionals, and general consumers
+- Slightly more polished/less chaotic than pure TikTok energy`,
+    cta: `CTA STYLE: "Click the link" / "Find it in my bio" / "Comment LINK for details"
+- Facebook CTAs can reference bio links, comments, or tagged products
+- Engagement-focused CTAs work well ("Comment if you want this!")
+- Less emphasis on cart icons, more on link-clicking behavior`,
+  },
+
+  INSTAGRAM_REELS: {
+    analysis: `This product is from Instagram Reels - emphasizing aesthetics and lifestyle appeal.
+Focus on: Visual beauty, aspirational lifestyle, aesthetic cohesion.
+Instagram users value polished, visually pleasing content.`,
+    script: `OUTPUT PLATFORM: Instagram Reels (aesthetic-focused promotion)
+- Video will be posted to Instagram Reels with shopping tags or link in bio
+- Instagram audience values aesthetics, lifestyle aspiration, and visual quality
+- Content should feel curated and visually cohesive
+- Balance authenticity with elevated production quality`,
+    cta: `CTA STYLE: "Link in bio" / "Tap to shop" / "Shop via link in bio"
+- Instagram CTAs reference bio links or shopping tags
+- "Link in bio" is the standard Instagram CTA pattern
+- Shopping tags allow direct product tagging on Instagram`,
+  },
+
+  AMAZON: {
+    analysis: `This product is from Amazon - rich with reviews, ratings, and detailed specifications.
+Focus on: Social proof from reviews, Prime benefits, detailed feature breakdown.
+Amazon products have extensive customer feedback to leverage.`,
+    script: `OUTPUT PLATFORM: Social media (promoting Amazon product)
+- Video will promote an Amazon product listing
+- Leverage Amazon's trust: "Available on Amazon", "Prime shipping"
+- Use customer review highlights as social proof
+- Amazon buyers expect detailed specifications and honest comparisons`,
+    cta: `CTA STYLE: "Link in bio to Amazon" / "Find it on Amazon - link below"
+- Reference Amazon specifically for trust ("Get it on Amazon")
+- Mention Prime benefits if applicable ("Prime members get free shipping")
+- Affiliate link will be in video description/bio`,
+  },
+
+  SHOPIFY: {
+    analysis: `This product is from an independent Shopify store - emphasizing brand story and uniqueness.
+Focus on: Brand differentiation, unique selling proposition, direct-to-consumer appeal.
+Shopify products often have compelling founder/brand stories.`,
+    script: `OUTPUT PLATFORM: Social media (promoting independent brand)
+- Video will promote a direct-to-consumer brand/Shopify store
+- Emphasize what makes this brand unique vs. mass-market alternatives
+- Highlight brand story, craftsmanship, or founder mission if applicable
+- Independent brands can emphasize quality, ethics, or exclusivity`,
+    cta: `CTA STYLE: "Shop now via link" / "Visit [brand] - link in bio"
+- Direct viewers to the brand's website
+- Can reference brand name for memorability
+- Emphasize unique brand benefits ("Support small business", "Handcrafted", "Exclusive")`,
+  },
+};
+
 interface ScriptGenerationOptions {
   tone?: 'casual' | 'professional' | 'enthusiastic' | 'humorous';
   targetDuration?: number;
@@ -494,8 +586,8 @@ Return ONLY this exact JSON structure:
     }
   }
 
-  async analyzeProduct(productData: ProductData): Promise<AnalyzedProduct> {
-    logger.info({ productTitle: productData.title }, 'Analyzing product with Product Breakdown GPT');
+  async analyzeProduct(productData: ProductData, platform: Platform = 'TIKTOK_SHOP'): Promise<AnalyzedProduct> {
+    logger.info({ productTitle: productData.title, platform }, 'Analyzing product with Product Breakdown GPT');
 
     // First, analyze the product image if available
     const imageUrl = productData.images[0];
@@ -505,7 +597,13 @@ Return ONLY this exact JSON structure:
       visualAnalysis = await this.analyzeProductImage(imageUrl);
     }
 
+    // Get platform-specific context
+    const platformContext = PLATFORM_CONTEXT[platform];
+
     const userPrompt = `Analyze this product and return the JSON breakdown:
+
+PLATFORM CONTEXT:
+${platformContext.analysis}
 
 PRODUCT URL: ${productData.url}
 PRODUCT TITLE: ${productData.title}
@@ -587,14 +685,15 @@ Return ONLY the JSON object, no other text. IMPORTANT: Include the visual analys
     productData: ProductData,
     videoStyle: VideoStyle,
     options: ScriptGenerationOptions = {},
-    analyzedProduct?: AnalyzedProduct
+    analyzedProduct?: AnalyzedProduct,
+    platform: Platform = 'TIKTOK_SHOP'
   ): Promise<GeneratedScript> {
-    logger.info({ videoStyle, hasAnalyzedProduct: !!analyzedProduct, hasAdditionalNotes: !!options.additionalNotes }, 'Generating Sora 2 UGC script');
+    logger.info({ videoStyle, platform, hasAnalyzedProduct: !!analyzedProduct, hasAdditionalNotes: !!options.additionalNotes }, 'Generating Sora 2 UGC script');
 
-    // Build the user prompt with product data
+    // Build the user prompt with product data and platform context
     const userPrompt = analyzedProduct
-      ? this.buildSora2Prompt(analyzedProduct, videoStyle, options.additionalNotes)
-      : this.buildBasicSora2Prompt(productData, videoStyle, options.additionalNotes);
+      ? this.buildSora2Prompt(analyzedProduct, videoStyle, options.additionalNotes, platform)
+      : this.buildBasicSora2Prompt(productData, videoStyle, options.additionalNotes, platform);
 
     try {
       const response = await openai.chat.completions.create({
@@ -631,9 +730,10 @@ Return ONLY the JSON object, no other text. IMPORTANT: Include the visual analys
     }
   }
 
-  private buildSora2Prompt(analyzedProduct: AnalyzedProduct, videoStyle: VideoStyle, additionalNotes?: string): string {
+  private buildSora2Prompt(analyzedProduct: AnalyzedProduct, videoStyle: VideoStyle, additionalNotes?: string, platform: Platform = 'TIKTOK_SHOP'): string {
     const styleGuidance = STYLE_PROMPTS[videoStyle];
     const visual = analyzedProduct.visualAnalysis;
+    const platformContext = PLATFORM_CONTEXT[platform];
 
     // Build visual guidance section if visual analysis is available
     const visualGuidance = visual ? `
@@ -725,7 +825,15 @@ Even when applying user customizations, maintain these conversion anchors:
 - Clear CTA pointing to cart area
 ═══════════════════════════════════════════════════════════════════════` : '';
 
-    return `Generate a Sora 2-ready TikTok Shop UGC video prompt for this product:
+    return `Generate a Sora 2-ready UGC video prompt for this product:
+
+═══════════════════════════════════════════════════════════════════════
+PLATFORM & DISTRIBUTION CONTEXT
+═══════════════════════════════════════════════════════════════════════
+${platformContext.script}
+
+${platformContext.cta}
+═══════════════════════════════════════════════════════════════════════
 
 PRODUCT NAME: ${analyzedProduct.productName}
 
@@ -753,11 +861,12 @@ PRODUCT IMAGE URL: ${analyzedProduct.imageUrl}
 ${styleGuidance}
 ${notesSection}
 
-Generate a complete 10-second TikTok UGC video prompt optimized for Sora 2 generation. The video will use the product image as a reference, so ensure visual descriptions match the actual product appearance. Return ONLY valid JSON.`;
+Generate a complete 10-second UGC video prompt optimized for Sora 2 generation. The video will use the product image as a reference, so ensure visual descriptions match the actual product appearance. IMPORTANT: Use the CTA style appropriate for the platform specified above. Return ONLY valid JSON.`;
   }
 
-  private buildBasicSora2Prompt(productData: ProductData, videoStyle: VideoStyle, additionalNotes?: string): string {
+  private buildBasicSora2Prompt(productData: ProductData, videoStyle: VideoStyle, additionalNotes?: string, platform: Platform = 'TIKTOK_SHOP'): string {
     const styleGuidance = STYLE_PROMPTS[videoStyle];
+    const platformContext = PLATFORM_CONTEXT[platform];
 
     // Build additional notes section if provided - enhanced for Sora 2 optimization
     const notesSection = additionalNotes ? `
@@ -834,7 +943,15 @@ Even when applying user customizations, maintain these conversion anchors:
 - Clear CTA pointing to cart area
 ═══════════════════════════════════════════════════════════════════════` : '';
 
-    return `Generate a Sora 2-ready TikTok Shop UGC video prompt for this product:
+    return `Generate a Sora 2-ready UGC video prompt for this product:
+
+═══════════════════════════════════════════════════════════════════════
+PLATFORM & DISTRIBUTION CONTEXT
+═══════════════════════════════════════════════════════════════════════
+${platformContext.script}
+
+${platformContext.cta}
+═══════════════════════════════════════════════════════════════════════
 
 PRODUCT TITLE: ${productData.title}
 DESCRIPTION: ${productData.description || 'Not provided'}
@@ -844,7 +961,7 @@ PRODUCT IMAGE URL: ${productData.images[0] || 'Not available'}
 ${styleGuidance}
 ${notesSection}
 
-Generate a complete 10-second TikTok UGC video prompt optimized for Sora 2 generation. Return ONLY valid JSON.`;
+Generate a complete 10-second UGC video prompt optimized for Sora 2 generation. IMPORTANT: Use the CTA style appropriate for the platform specified above. Return ONLY valid JSON.`;
   }
 
   private parseSora2Response(content: string): GeneratedScript {

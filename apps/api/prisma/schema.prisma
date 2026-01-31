@@ -203,13 +203,23 @@ enum VideoStyle {
   LIFESTYLE
 }
 
+enum Platform {
+  TIKTOK_SHOP
+  YOUTUBE_SHORTS
+  FACEBOOK_REELS
+  INSTAGRAM_REELS
+  AMAZON
+  SHOPIFY
+}
+
 model Video {
   id                 String      @id @default(cuid())
   userId             String
   user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   status             VideoStatus @default(PENDING_SCRIPT)
+  platform           Platform    @default(TIKTOK_SHOP)
 
-  // Product data (scraped from TikTok Shop)
+  // Product data (scraped from multiple platforms)
   productData        Json
   productTitle       String
   productUrl         String
@@ -259,6 +269,7 @@ model Video {
 
   @@index([userId])
   @@index([status])
+  @@index([platform])
   @@index([soraJobId])
   @@index([createdAt])
 }

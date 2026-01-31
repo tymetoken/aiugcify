@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI UGCify - TikTok Shop Video Generator",
-  "version": "1.0.2",
-  "description": "Generate AI-powered UGC marketing videos from TikTok Shop products instantly",
+  "name": "AI UGCify - Product Video Generator",
+  "version": "2.0.0",
+  "description": "Generate AI-powered UGC marketing videos from TikTok Shop, Amazon, Shopify, YouTube, Instagram, and Facebook products",
   "permissions": [
     "storage",
     "activeTab",
@@ -15,6 +15,21 @@
   },
   "host_permissions": [
     "https://*.tiktok.com/*",
+    "https://*.youtube.com/*",
+    "https://*.facebook.com/*",
+    "https://*.instagram.com/*",
+    "https://*.amazon.com/*",
+    "https://*.amazon.co.uk/*",
+    "https://*.amazon.ca/*",
+    "https://*.amazon.de/*",
+    "https://*.amazon.fr/*",
+    "https://*.amazon.es/*",
+    "https://*.amazon.it/*",
+    "https://*.amazon.com.au/*",
+    "https://*.amazon.co.jp/*",
+    "https://*.amazon.in/*",
+    "https://*.amazon.com.mx/*",
+    "https://*.myshopify.com/*",
     "https://api.aiugcify.com/*",
     "https://aiugcifyapi-production.up.railway.app/*",
     "https://*.cloudinary.com/*"
@@ -32,6 +47,67 @@
         "https://*.tiktok.com/*/product/*",
         "https://*.tiktok.com/shop/*",
         "https://shop.tiktok.com/*"
+      ],
+      "js": ["src/content/index.ts"],
+      "css": ["content-styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.youtube.com/shorts/*",
+        "https://*.youtube.com/watch*"
+      ],
+      "js": ["src/content/index.ts"],
+      "css": ["content-styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.facebook.com/reel/*",
+        "https://*.facebook.com/watch/*",
+        "https://*.facebook.com/*/videos/*"
+      ],
+      "js": ["src/content/index.ts"],
+      "css": ["content-styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.instagram.com/reel/*",
+        "https://*.instagram.com/reels/*",
+        "https://*.instagram.com/p/*"
+      ],
+      "js": ["src/content/index.ts"],
+      "css": ["content-styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.amazon.com/dp/*",
+        "https://*.amazon.com/*/dp/*",
+        "https://*.amazon.com/gp/product/*",
+        "https://*.amazon.co.uk/dp/*",
+        "https://*.amazon.co.uk/*/dp/*",
+        "https://*.amazon.ca/dp/*",
+        "https://*.amazon.ca/*/dp/*",
+        "https://*.amazon.de/dp/*",
+        "https://*.amazon.de/*/dp/*",
+        "https://*.amazon.fr/dp/*",
+        "https://*.amazon.fr/*/dp/*",
+        "https://*.amazon.es/dp/*",
+        "https://*.amazon.it/dp/*",
+        "https://*.amazon.com.au/dp/*",
+        "https://*.amazon.co.jp/dp/*",
+        "https://*.amazon.in/dp/*"
+      ],
+      "js": ["src/content/index.ts"],
+      "css": ["content-styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.myshopify.com/*/products/*",
+        "https://*/products/*"
       ],
       "js": ["src/content/index.ts"],
       "css": ["content-styles.css"],

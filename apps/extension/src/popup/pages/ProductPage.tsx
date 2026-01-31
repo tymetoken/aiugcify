@@ -6,9 +6,49 @@ import { useUIStore } from '../store/uiStore';
 import { Button } from '../components/Button';
 import { CreditTooltip } from '../components/CreditTooltip';
 import { LoginModal } from '../components/LoginModal';
-import type { VideoStyle } from '@aiugcify/shared-types';
+import type { VideoStyle, Platform } from '@aiugcify/shared-types';
 
 const MAX_NOTES_LENGTH = 500;
+
+// Platform display information
+const PLATFORM_INFO: Record<Platform, { label: string; icon: string; bgColor: string; textColor: string }> = {
+  TIKTOK_SHOP: {
+    label: 'TikTok Shop',
+    icon: '🎵',
+    bgColor: 'bg-black',
+    textColor: 'text-white',
+  },
+  YOUTUBE_SHORTS: {
+    label: 'YouTube',
+    icon: '▶️',
+    bgColor: 'bg-red-600',
+    textColor: 'text-white',
+  },
+  FACEBOOK_REELS: {
+    label: 'Facebook',
+    icon: '📘',
+    bgColor: 'bg-blue-600',
+    textColor: 'text-white',
+  },
+  INSTAGRAM_REELS: {
+    label: 'Instagram',
+    icon: '📸',
+    bgColor: 'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400',
+    textColor: 'text-white',
+  },
+  AMAZON: {
+    label: 'Amazon',
+    icon: '📦',
+    bgColor: 'bg-amber-500',
+    textColor: 'text-black',
+  },
+  SHOPIFY: {
+    label: 'Shopify',
+    icon: '🛍️',
+    bgColor: 'bg-green-600',
+    textColor: 'text-white',
+  },
+};
 
 const GENERATION_STEPS = [
   { id: 1, label: 'Analyzing product', description: 'Extracting key features and benefits' },
@@ -39,7 +79,11 @@ const VIDEO_STYLES: { value: VideoStyle; label: string; description: string; ico
 ];
 
 export function ProductPage() {
-  const { scrapedProduct } = useProductStore();
+  const { scrapedProduct, detectedPlatform } = useProductStore();
+
+  // Get platform from scraped product or detected platform
+  const platform: Platform | null = scrapedProduct?.platform || detectedPlatform;
+  const platformInfo = platform ? PLATFORM_INFO[platform] : null;
   const {
     selectedStyle,
     setSelectedStyle,
@@ -116,6 +160,16 @@ export function ProductPage() {
     <div className="p-4 space-y-4">
       {/* Product Preview */}
       <div className="bg-white rounded-xl border border-slate-200 p-4">
+        {/* Platform Badge */}
+        {platformInfo && (
+          <div className="flex items-center gap-2 mb-3">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${platformInfo.bgColor} ${platformInfo.textColor}`}>
+              <span>{platformInfo.icon}</span>
+              {platformInfo.label}
+            </span>
+            <span className="text-xs text-slate-400">Product detected</span>
+          </div>
+        )}
         <div className="flex gap-3">
           {scrapedProduct.images[0] && (
             <img
